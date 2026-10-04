@@ -192,6 +192,7 @@ def extract_procedures(text: str) -> list[dict]:
 def groq_extract(text: str) -> list[dict] | None:
     api_key = os.environ.get("GROQ_API_KEY", "").strip().strip("\"'")
     if not api_key:
+        print("Groq extraction skipped: GROQ_API_KEY is not configured.", file=sys.stderr)
         return None
     model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
     prompt = """You are extracting dental treatment information from messy patient-written text.
@@ -283,21 +284,36 @@ TEXT:
                     "notes": procedure.get("notes", ""),
                 }
             )
-        return normalized or None
+        if not normalized:
+            print("Groq extraction returned no usable procedures; using local parser.", file=sys.stderr)
+            return None
+        print(
+            f"Groq extraction succeeded: {len(normalized)} procedure(s) using {model}.",
+            file=sys.stderr,
+        )
+        return normalized
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        print(
+            f"Groq extraction request failed ({error.code}): {detail}; using local parser.",
+            file=sys.stderr,
+        )
+        return None
     except (
         KeyError,
         TypeError,
         ValueError,
-        urllib.error.HTTPError,
         urllib.error.URLError,
         TimeoutError,
     ):
+        print("Groq extraction response could not be parsed; using local parser.", file=sys.stderr)
         return None
 
 
 def groq_explain_options(options: list[dict]) -> str:
     api_key = os.environ.get("GROQ_API_KEY", "").strip().strip("\"'")
     if not api_key:
+        print("Groq explanation skipped: GROQ_API_KEY is not configured.", file=sys.stderr)
         return ""
     computed = [
         {
@@ -354,6 +370,7 @@ COMPUTED STRATEGIES:
         if not isinstance(explanation, str) or not explanation.strip():
             print("Groq explanation returned no usable explanation.", file=sys.stderr)
             return ""
+        print("Groq explanation succeeded.", file=sys.stderr)
         return explanation.strip()
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")[:500]
@@ -369,7 +386,10 @@ COMPUTED STRATEGIES:
         urllib.error.URLError,
         TimeoutError,
     ):
-        print("Groq explanation response could not be parsed.", file=sys.stderr)
+        print(
+            "Groq explanation response could not be parsed; using deterministic explanation.",
+            file=sys.stderr,
+        )
         return ""
 
 
