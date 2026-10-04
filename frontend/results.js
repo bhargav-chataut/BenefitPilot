@@ -196,7 +196,7 @@ function handleFile(file) {
   state.file = file;
   $("fileName").textContent = file.name;
   $("fileName").classList.add("ok");
-  extract({ file });
+  extract({ file, continueToAnalyze: true });
 }
 
 $("manualBtn").addEventListener("click", () => {
@@ -226,7 +226,6 @@ async function extract({ file, text, continueToAnalyze = false }) {
   setBusy(true);
   $("results").hidden = true;
   $("results").classList.remove("show");
-  $("extractionPreview").hidden = true;
   $("loading").hidden = false;
   $("how").hidden = true;
 
@@ -267,7 +266,7 @@ async function extract({ file, text, continueToAnalyze = false }) {
     if (continueToAnalyze) {
       await analyzeSource();
     } else {
-      renderExtraction(state.extraction.treatment);
+      await analyzeSource();
     }
   } catch (err) {
     showError(err.message || "We couldn’t process that plan. Please try again.");
@@ -278,28 +277,9 @@ async function extract({ file, text, continueToAnalyze = false }) {
   }
 }
 
-function renderExtraction(treatment) {
-  const procedures = treatment.procedures || [];
-  $("detectedMeta").textContent = [
-    treatment.provider,
-    treatment.visitDate,
-  ]
-    .filter(Boolean)
-    .join(" • ");
-  $("detectedList").innerHTML = procedures
-    .map(
-      (p) =>
-        `<li><span>${esc(p.name)} <small>(${esc(p.code)})</small></span><strong>${money(p.cost)}</strong></li>`,
-    )
-    .join("");
-  $("extractionPreview").hidden = false;
-  $("extractionPreview").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 async function analyzeSource() {
   showError("");
   setBusy(true);
-  $("extractionPreview").hidden = true;
   $("loading").hidden = false;
   $("how").hidden = true;
   let i = 0;
@@ -319,7 +299,6 @@ async function analyzeSource() {
     render(await res.json());
   } catch (err) {
     showError(err.message || "We couldn’t build your care options. Please try again.");
-    $("extractionPreview").hidden = false;
   } finally {
     clearInterval(timer);
     $("loading").hidden = true;
@@ -331,13 +310,6 @@ function setBusy(on) {
   ["chooseBtn", "manualBtn"].forEach((id) => ($(id).disabled = on));
   $("manualText").disabled = on;
 }
-
-$("confirmExtractionBtn").addEventListener("click", analyzeSource);
-$("editExtractionBtn").addEventListener("click", () => {
-  $("extractionPreview").hidden = true;
-  $("how").hidden = false;
-  $("manualText").focus();
-});
 
 /* ================= RENDER ================= */
 function render(data, keep = false) {

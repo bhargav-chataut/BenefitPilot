@@ -166,11 +166,30 @@ def groq_extract(text: str) -> list[dict] | None:
     if not api_key:
         return None
     model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
-    prompt = """Extract dental procedures from the text below.
-Return only valid JSON with this shape:
-{"procedures":[{"name":"string","code":"D#### or N/A","category":"preventive|basic|major|orthodontic","cost":0}]}
-Use the CDT code when present. Infer category from the procedure and code.
-Use a numeric cost in dollars. Do not invent procedures or costs.
+    prompt = """You are extracting dental treatment information from messy patient-written text.
+
+Identify ONLY actual dental procedures, treatments, or diagnostic services.
+Do not extract budgets, insurance limits, preferences, scheduling preferences,
+general comments, symptoms by themselves, or dollar amounts not tied to a
+dental procedure.
+
+Valid procedures include fillings, crowns, cleanings, x-rays, root canals,
+extractions, implants, bridges, dentures, deep cleaning/scaling and root planing,
+exams, and fluoride treatments.
+
+Return ONLY valid JSON in exactly this shape:
+{"procedures":[{"procedure_name":"string","tooth_number":null,"estimated_cost":null,"cost_min":null,"cost_max":null,"quantity":1,"urgency":"unknown","can_delay":null,"notes":"string"}]}
+
+Rules:
+- If two cavities need fillings, return one filling object with quantity 2.
+- For a price range, set cost_min and cost_max and use its midpoint as estimated_cost.
+- Only include a tooth number when explicitly stated.
+- Never invent prices, tooth numbers, CDT codes, or treatments.
+- If a service has no price, estimated_cost must be null.
+- Include uncertain real services such as "maybe x-rays", with a note.
+- urgency must be urgent, soon, routine, or unknown.
+- can_delay must be true, false, or null.
+- notes must contain only a short treatment-specific note.
 
 TEXT:
 """ + text
@@ -205,21 +224,35 @@ TEXT:
             return None
         normalized = []
         for procedure in procedures:
-            name = str(procedure.get("name", "")).strip()
+            name = str(
+                procedure.get("procedure_name", procedure.get("name", ""))
+            ).strip()
             if not name:
                 continue
             code = str(procedure.get("code", "N/A")).upper()
-            cost = float(procedure.get("cost", 0))
+            raw_cost = procedure.get("estimated_cost")
+            if raw_cost is None:
+                raw_min = procedure.get("cost_min")
+                raw_max = procedure.get("cost_max")
+                if raw_min is not None and raw_max is not None:
+                    raw_cost = (float(raw_min) + float(raw_max)) / 2
+            cost = float(raw_cost) if raw_cost is not None else 0
             if cost < 0:
                 continue
             name = _name_for_cost(text, cost, name)
             category = _category(code, name)
+            quantity = max(1, int(procedure.get("quantity", 1)))
             normalized.append(
                 {
                     "name": name,
                     "code": code if CODE_RE.fullmatch(code) else "N/A",
                     "category": category,
                     "cost": round(cost, 2),
+                    "quantity": quantity,
+                    "toothNumber": procedure.get("tooth_number"),
+                    "urgency": procedure.get("urgency", "unknown"),
+                    "canDelay": procedure.get("can_delay"),
+                    "notes": procedure.get("notes", ""),
                 }
             )
         return normalized or None
