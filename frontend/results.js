@@ -47,7 +47,7 @@ const MOCK = {
 
 /* ================= HELPERS ================= */
 const $ = (id) => document.getElementById(id);
-const money = (n) => n == null ? "N/A" : "$" + Number(n).toLocaleString("en-US");
+const money = (n) => n == null ? "" : "$" + Number(n).toLocaleString("en-US");
 const esc = (s) =>
   String(s).replace(
     /[&<>"]/g,
@@ -241,7 +241,7 @@ function render(data, keep = false) {
     .map(
       (p) => `
     <li><svg class="ic"><use href="#tooth"/></svg>
-      <span>${esc(p.name)} <small>(${esc(p.code)})</small></span><span class="p">${money(p.cost)}</span></li>`,
+      <span>${esc(p.name)}${p.code ? ` <small>(${esc(p.code)})</small>` : ""}</span><span class="p">${money(p.cost)}</span></li>`,
     )
     .join("");
   $("optimizerExplanation").textContent = data.explanation || "";
@@ -320,7 +320,7 @@ function renderSelected() {
   $("schedRows").innerHTML = data.procedures
     .map(
       (p, r) => `
-    <div class="sched"><span>${esc(p.name)} <small>(${esc(p.code)})</small></span>
+    <div class="sched"><span>${esc(p.name)}${p.code ? ` <small>(${esc(p.code)})</small>` : ""}</span>
       ${data.months.map((_, c) => `<input type="radio" name="s${r}" aria-label="${esc(p.name)} in ${esc(data.months[c])}" ${opt.schedule[r] === c ? "checked" : ""}>`).join("")}
     </div>`,
     )
