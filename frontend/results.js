@@ -260,7 +260,7 @@ function render(data, keep = false) {
       <div class="stats">
         <div class="stat"><small>You pay</small><strong>${money(o.youPay)}</strong></div>
         <div class="stat"><small>Plan pays</small><strong>${money(o.planPays)}</strong></div>
-        <div class="stat"><small>Benefit remaining</small><strong class="g">${money(o.benefitRemaining)}</strong></div>
+        <div class="stat"><small>Remaining after plan</small><strong class="g">${money(o.benefitRemaining)}</strong></div>
       </div>
       <div class="meta"><svg class="ic"><use href="#cal"/></svg>${data.procedures.length} procedures &bull; ${esc(o.range)}</div>
     </label>`,
@@ -329,9 +329,9 @@ function renderScenario() {
     <div><span>Estimated treatment cost</span><b>${money(s.totalCost)}</b></div>
     <div><span>Plan pays</span><b class="b">${money(s.planPays)}</b></div>
     <div><span>You pay</span><b class="b">${money(s.youPay)}</b></div>
-    <div><span>Annual benefit used (2026)</span><b>${money(s.benefitUsed)}</b></div>
-    <div><span>Annual benefit remaining (2026)</span><b class="g">${money(s.benefitRemaining)}</b></div>
-    <div><span>Next-year benefit used (2027)</span><b>${money(s.nextYearUsed)}</b></div>
+    <div><span>Projected benefit use (2026)</span><b>${money(s.benefitUsed)}</b></div>
+    <div><span>Remaining after plan (2026)</span><b class="g">${money(s.benefitRemaining)}</b></div>
+    <div><span>Next-year projected use (2027)</span><b>${money(s.nextYearUsed)}</b></div>
     ${s.monthlyPayments ? s.monthlyPayments.map((amount, i) => `<div><span>Estimated ${esc(state.data.months[i])} payment</span><b>${money(amount)}</b></div>`).join("") : ""}`;
   document
     .querySelectorAll(".seg button")

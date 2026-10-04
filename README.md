@@ -33,12 +33,20 @@ HOST=0.0.0.0 PORT=8001 python3 backend/server.py
 ```
 
 Frontend files live in `frontend/`. See [structure.md](structure.md) for the layout.
-The login and dashboard load the SQL seed files directly in the browser using
-SQLite WebAssembly. The SQL files must be served over HTTP; opening the HTML
-files directly from the filesystem will prevent the browser from loading them.
-The dashboard reads annual totals from `benefit_usage.sql`, monthly history
-from `benefit_transactions.sql`, and scheduled procedures from
-`upcoming_care.sql`.
+Dashboard, Alerts, and Treatments use the same employee benefit data from the
+Python backend. `/api/benefits` reads annual totals from `benefit_usage.sql` and
+monthly actuals from `benefit_transactions.sql`; the browser no longer needs
+SQLite WebAssembly. The prototype planning year is 2026, with January 2027 kept
+separate as next-year usage.
+
+On Treatments, **Add plan** validates and prices the selected schedule through
+`/api/project`, then saves it per employee in localStorage. The accepted plan
+supplies dashboard projections and upcoming care. Adding again replaces the
+accepted projection rather than duplicating it. Actual usage and remaining
+benefits do not change until claims are recorded; projected usage and remaining
+after the plan are displayed separately. Seed upcoming-care estimates are no
+longer included in projections. Changes sync across tabs and survive reloads.
+
 The local server exposes `/api/extract` for the current extraction step. It
 extracts text from uploaded, text-based PDFs with `pdftotext`, then returns
 structured JSON containing the source text, provider/date metadata, and
@@ -131,8 +139,11 @@ the production `PORT` environment variable automatically.
 ## Shared notifications
 
 `frontend/notifications.js` supplies the same feed, unread count, and latest-unread
-popup to Dashboard, Treatments, and Alerts. It requests `/api/alerts` and uses the
-existing demo alerts when the endpoint is unavailable. Each alert has a stable
+popup to Dashboard, Treatments, and Alerts. `frontend/benefits.js` supplies the
+shared employee snapshot. Benefit alerts appear only when actual remaining
+benefits are strictly below 80% of the annual maximum; at 80% or above, the
+dashboard banner is hidden and no low-benefit notification is generated.
+Unrelated demo alerts and fixed benefit amounts are removed. Each alert has a stable
 `id`, a boolean `read`, a `status` (`active`, `expired`, or `resolved`), and optionally
 `createdAt` and `expiresAt` timestamps. Only expired/resolved alerts appear in Past
 Alerts; reading an alert never archives or removes it.
@@ -143,3 +154,5 @@ synchronize other tabs. The popup shows the five newest unread active alerts.
 This is browser-local hackathon state, not server-side persistence.
 
 Run notification checks with `node tests/test_notifications.cjs`.
+
+Run shared benefit/projection checks with `node tests/test_benefits.cjs`.
