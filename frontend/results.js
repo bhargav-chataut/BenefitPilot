@@ -205,7 +205,7 @@ $("manualBtn").addEventListener("click", () => {
     return showError(
       'Type at least one procedure and its cost, e.g. "Crown (D2740) – $1,400".',
     );
-  extract({ text });
+  extract({ text, continueToAnalyze: true });
 });
 
 function showError(msg) {
@@ -221,7 +221,7 @@ const STEPS = [
   "Building your care options…",
 ];
 
-async function extract({ file, text }) {
+async function extract({ file, text, continueToAnalyze = false }) {
   showError("");
   setBusy(true);
   $("results").hidden = true;
@@ -262,12 +262,16 @@ async function extract({ file, text }) {
       };
       state.source = { file, text };
     }
-    renderExtraction(state.extraction.treatment);
+    if (continueToAnalyze) {
+      await analyzeSource();
+    } else {
+      renderExtraction(state.extraction.treatment);
+    }
   } catch (err) {
     showError(err.message || "We couldn’t process that plan. Please try again.");
   } finally {
     $("loading").hidden = true;
-    $("how").hidden = false;
+    if ($("results").hidden) $("how").hidden = false;
     setBusy(false);
   }
 }
