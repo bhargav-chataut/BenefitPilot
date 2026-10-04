@@ -80,6 +80,26 @@ def _clean_manual_name(name: str) -> str:
     return name
 
 
+def _name_for_cost(text: str, cost: float, fallback: str) -> str:
+    amount = f"{cost:,.2f}".replace(".00", "")
+    for line in text.splitlines():
+        if amount in line or f"{cost:g}" in line:
+            before_cost = re.split(r"\$", line, maxsplit=1)[0]
+            code_match = CODE_RE.search(before_cost)
+            if code_match:
+                before_cost = before_cost.replace(code_match.group(0), "")
+            cleaned = re.sub(r"\s+", " ", before_cost).strip(" -:,.()–—")
+            if cleaned:
+                mapped = _clean_manual_name(cleaned)
+                if mapped != cleaned or not re.search(
+                    r"\b(?:said|maybe|probably|around|need|have|the|on|one|and)\b",
+                    mapped,
+                    re.IGNORECASE,
+                ):
+                    return mapped
+    return _clean_manual_name(fallback)
+
+
 def _procedure_from_line(line: str) -> dict | None:
     match = PROCEDURE_RE.match(line)
     if not match:
@@ -191,6 +211,7 @@ TEXT:
             cost = float(procedure.get("cost", 0))
             if cost < 0:
                 continue
+            name = _name_for_cost(text, cost, name)
             category = _category(code, name)
             normalized.append(
                 {
