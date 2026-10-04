@@ -136,7 +136,7 @@ def optimize_response(payload: dict) -> dict:
         "months": ["Oct", "Nov", "Dec", "Jan"],
         "procedures": procedures,
         "pricing": payload.get("pricing"),
-        "insurance": payload.get("insurance"),
+        "insurance": insurance_info(employee),
         "settings": settings,
         "options": options,
     }
@@ -446,6 +446,64 @@ def load_employee(email: str | None) -> dict:
         database.close()
 
 
+def insurance_info(employee: dict) -> dict:
+    return {
+        "provider": employee["provider"], "planName": employee["plan_name"],
+        "planType": employee["plan_type"], "annualMaximum": employee["annual_maximum"],
+        "remainingAnnualMaximum": employee["remaining_maximum"],
+        "annualBenefitUsed": employee["benefit_used"],
+        "remainingDeductible": employee["remaining_deductible"],
+        "coverage": {category: employee[category + "_rate"]
+                     for category in ("preventive", "basic", "major", "orthodontic")},
+    }
+
+
+def benefits_response(email: str | None) -> dict:
+    employee = load_employee(email)
+    with sqlite3.connect(":memory:") as database:
+        for filename in ("employees.sql", "benefit_transactions.sql"):
+            database.executescript((ROOT / "MOCKDATA_BASE" / filename).read_text())
+        rows = database.execute(
+            """SELECT CAST(strftime('%m', service_date) AS INTEGER), SUM(benefit_used)
+               FROM benefit_transactions WHERE employee_id =
+               (SELECT employee_id FROM employees WHERE lower(email) = lower(?))
+               AND strftime('%Y', service_date) = '2026'
+               GROUP BY strftime('%m', service_date)""", (employee["email"],)
+        ).fetchall()
+    history = dict(rows)
+    return {
+        "email": employee["email"], "name": employee["name"], "year": 2026,
+        "annualMax": employee["annual_maximum"], "used": employee["benefit_used"],
+        "remaining": employee["remaining_maximum"], "insurance": insurance_info(employee),
+        "months": [{"month": month, "amount": history.get(index, 0)}
+                   for index, month in enumerate(
+                       ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)],
+    }
+
+
+def project_response(payload: dict) -> dict:
+    employee = load_employee(payload.get("employeeEmail"))
+    procedures, schedule = payload.get("procedures"), payload.get("schedule")
+    settings = normalize_settings(payload.get("settings"))
+    if not isinstance(procedures, list) or not procedures or not isinstance(schedule, list):
+        raise ValueError("Select a treatment plan before adding it.")
+    if len(schedule) != len(procedures) or any(type(month) is not int for month in schedule):
+        raise ValueError("Choose a month for every procedure.")
+    if not any(candidate == schedule for candidate in generate_schedules(
+        procedures, MONTHS.index(settings["latestMonth"])
+    )):
+        raise ValueError("This schedule does not meet the procedure constraints.")
+    network = payload.get("network", "in")
+    if network not in ("in", "out"):
+        raise ValueError("Choose an available network scenario.")
+    return {
+        "email": employee["email"], "year": 2026, "provider": payload.get("provider", "Your dental provider"),
+        "procedures": procedures, "schedule": schedule, "network": network,
+        "scenario": calculate_schedule(procedures, schedule, employee, network),
+        "insurance": insurance_info(employee),
+    }
+
+
 MONTHS = ["Oct", "Nov", "Dec", "Jan"]
 # Demo assumption only; not a verified insurer reimbursement rate.
 OUT_OF_NETWORK_BENEFIT_FACTOR = 0.70
@@ -478,6 +536,7 @@ def calculate_schedule(
     deductibles = [float(employee["remaining_deductible"]), float(employee["deductible"])]
     paid = [0.0, 0.0]
     monthly = [0.0] * len(MONTHS)
+    monthly_benefits = [0.0] * len(MONTHS)
     factor = 1.0 if network == "in" else OUT_OF_NETWORK_BENEFIT_FACTOR
     if not employee.get(f"{network}_network_supported", True):
         factor = 0.0
@@ -494,6 +553,7 @@ def calculate_schedule(
         remaining[year] -= covered
         paid[year] += covered
         monthly[month] += cost - covered
+        monthly_benefits[month] += covered
     total = sum(float(p["cost"]) for p in procedures)
     return {
         "totalCost": round(total, 2), "planPays": round(sum(paid), 2),
@@ -501,6 +561,7 @@ def calculate_schedule(
         "benefitUsed": round(paid[0], 2), "benefitRemaining": round(remaining[0], 2),
         "nextYearUsed": round(paid[1], 2), "months": MONTHS, "network": network,
         "monthlyPayments": [round(value, 2) for value in monthly],
+        "monthlyBenefitPayments": [round(value, 2) for value in monthly_benefits],
         "peakMonthlyPayment": round(max(monthly), 2),
     }
 
@@ -711,20 +772,7 @@ def build_response(text: str, email: str | None = None) -> dict:
                 for item in procedures
             ],
         },
-        "insurance": {
-            "provider": employee["provider"],
-            "planName": employee["plan_name"],
-            "planType": employee["plan_type"],
-            "annualMaximum": employee["annual_maximum"],
-            "remainingAnnualMaximum": employee["remaining_maximum"],
-            "remainingDeductible": employee["remaining_deductible"],
-            "coverage": {
-                "preventive": employee["preventive_rate"],
-                "basic": employee["basic_rate"],
-                "major": employee["major_rate"],
-                "orthodontic": employee["orthodontic_rate"],
-            },
-        },
+        "insurance": insurance_info(employee),
         "settings": settings,
         "options": options,
     }
@@ -796,6 +844,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/analyze",
             "/api/extract",
             "/api/optimize",
+            "/api/project",
             "/api/login",
         }:
             self._json(404, {"error": "Not found"})
@@ -813,14 +862,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"employee_id": employee_id, "email": email,
                                  "name": load_employee(email)["name"]})
                 return
-            if endpoint == "/api/optimize":
+            if endpoint in {"/api/optimize", "/api/project"}:
                 length = int(self.headers.get("Content-Length", "0"))
                 payload = json.loads(self.rfile.read(length))
                 payload["employeeEmail"] = (
                     payload.get("employeeEmail")
                     or self.headers.get("X-Employee-Email")
                 )
-                self._json(200, optimize_response(payload))
+                self._json(200, project_response(payload) if endpoint == "/api/project" else optimize_response(payload))
                 return
             form = cgi.FieldStorage(
                 fp=self.rfile,
@@ -844,6 +893,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
+        if path == "/api/benefits":
+            try:
+                query = urllib.parse.parse_qs(urlparse(self.path).query)
+                self._json(200, benefits_response(query.get("employeeEmail", [None])[0]))
+            except ValueError as error:
+                self._json(422, {"error": str(error)})
+            return
         if path == "/":
             self.send_response(302)
             self.send_header("Location", "/frontend/index.html")

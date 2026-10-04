@@ -317,6 +317,7 @@ function setBusy(on) {
 /* ================= RENDER ================= */
 function render(data, keep = false) {
   state.data = data;
+  $("addPlanStatus").textContent = "";
   if (!keep || !data.options.some((o) => o.id === state.selected)) {
     state.selected = (
       data.options.find((o) => o.recommended) || data.options[0]
@@ -413,6 +414,12 @@ function renderSelected() {
 }
 
 function renderScenario() {
+  state.data.options.forEach(option => {
+    const card = document.querySelector(`.opt[data-id="${option.id}"]`);
+    const scenario = option.scenario[state.net];
+    const values = [scenario.youPay, scenario.planPays, scenario.benefitRemaining];
+    card?.querySelectorAll('.stat strong').forEach((value, index) => { value.textContent = money(values[index]); });
+  });
   const opt = state.data.options.find((o) => o.id === state.selected);
   const s = opt.scenario[state.net];
   $("scenRows").innerHTML = `
@@ -521,3 +528,24 @@ async function optimize() {
     $("optimizeLabel").textContent = "Optimize my plan";
   }
 }
+
+
+$("addPlanBtn").addEventListener("click", async () => {
+  const button = $("addPlanBtn");
+  const option = state.data?.options.find(item => item.id === state.selected);
+  if (!option) return;
+  button.disabled = true;
+  $("addPlanStatus").textContent = "Adding plan…";
+  try {
+    const plan = await window.BenefitData.savePlan({
+      procedures: state.data.procedures, schedule: option.schedule,
+      network: state.net, provider: state.data.provider,
+      settings: { ...state.data.settings, latestMonth: $("fLatest").value },
+    });
+    option.scenario[state.net] = plan.scenario;
+    renderScenario();
+    $("addPlanStatus").textContent = "Plan added. Dashboard projections updated.";
+  } catch (error) {
+    $("addPlanStatus").textContent = error.message || "Could not add plan. Please try again.";
+  } finally { button.disabled = false; }
+});
