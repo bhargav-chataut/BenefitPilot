@@ -26,7 +26,8 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
-EMPLOYEES_SQL = ROOT / "MOCKDATA_BASE" / "employees.sql"
+MOCK_DATABASE_DIR = ROOT / "mock_lincoln_insurance_database"
+EMPLOYEES_SQL = MOCK_DATABASE_DIR / "employees.sql"
 EMPLOYEE_RE = re.compile(
     r"\('([^']+)','[^']*','[^']*','([^']+)','([^']+)'",
 )
@@ -568,7 +569,7 @@ def load_employee(email: str | None) -> dict:
     try:
         for filename in ("plans.sql", "employees.sql", "benefit_usage.sql"):
             database.executescript(
-                (ROOT / "MOCKDATA_BASE" / filename).read_text(encoding="utf-8")
+                (MOCK_DATABASE_DIR / filename).read_text(encoding="utf-8")
             )
         selected_email = email or "alex.carter@usm-demo.com"
         row = database.execute(
@@ -636,7 +637,7 @@ def benefits_response(email: str | None) -> dict:
     employee = load_employee(email)
     with sqlite3.connect(":memory:") as database:
         for filename in ("employees.sql", "benefit_transactions.sql"):
-            database.executescript((ROOT / "MOCKDATA_BASE" / filename).read_text())
+            database.executescript((MOCK_DATABASE_DIR / filename).read_text())
         rows = database.execute(
             """SELECT CAST(strftime('%m', service_date) AS INTEGER), SUM(benefit_used)
                FROM benefit_transactions WHERE employee_id =
@@ -1087,13 +1088,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         elif path.startswith("/frontend/"):
             target = FRONTEND / path.removeprefix("/frontend/")
-        elif path.startswith("/MOCKDATA_BASE/"):
+        elif path.startswith("/mock_lincoln_insurance_database/"):
             target = ROOT / path.lstrip("/")
         else:
             self.send_error(404)
             return
         target = target.resolve()
-        allowed_root = FRONTEND if path.startswith("/frontend/") or path == "/" else ROOT / "MOCKDATA_BASE"
+        allowed_root = (
+            FRONTEND
+            if path.startswith("/frontend/") or path == "/"
+            else MOCK_DATABASE_DIR
+        )
         if (
             not target.is_file()
             or allowed_root.resolve() not in target.parents
