@@ -257,6 +257,7 @@ function render(data, keep = false) {
     <label class="opt card" data-id="${esc(o.id)}">
       <input type="radio" name="opt" value="${esc(o.id)}">
       <div class="head"><span class="radio"></span><h4>${esc(o.name)}</h4>${o.recommended ? '<span class="badge">Recommended</span>' : ""}</div>
+      <p class="desc">${esc(o.aiExplanation || o.description)}</p>
       <div class="stats">
         <div class="stat"><small>You pay</small><strong>${money(o.youPay)}</strong></div>
         <div class="stat"><small>Plan pays</small><strong>${money(o.planPays)}</strong></div>

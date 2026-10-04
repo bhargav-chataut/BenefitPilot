@@ -75,6 +75,12 @@ the care options. NPPES is queried only when the treatment text contains a
 10-digit NPI; if it is unavailable, the treatment-plan provider text remains
 the source of truth.
 
+Optimization is deterministic: the backend calculates Budget, Balanced, and
+Fastest schedules and their benefit scenarios first. When `GROQ_API_KEY` is
+configured, Groq receives only those computed results and writes the
+user-facing explanations; it never selects schedules or changes financial
+values. If Groq is unavailable, the deterministic explanations are returned.
+
 The optimizer evaluates feasible assignments across October 2026–January 2027:
 
 - **Budget** minimizes total employee cost, then deliberately chooses the latest

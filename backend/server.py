@@ -127,7 +127,7 @@ def optimize_response(payload: dict) -> dict:
         raise ValueError("At least one procedure is required.")
     employee = load_employee(payload.get("employeeEmail"))
     settings = normalize_settings(payload.get("settings"))
-    options = build_options(procedures, employee, settings)
+    options = add_ai_explanations(build_options(procedures, employee, settings))
     return {
         "provider": payload.get("provider", "Your dental provider"),
         "providerDetails": payload.get("providerDetails"),
@@ -290,6 +290,88 @@ TEXT:
         TimeoutError,
     ):
         return None
+
+
+def groq_explain_options(options: list[dict]) -> dict[str, str]:
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return {}
+    computed = [
+        {
+            "id": option["id"],
+            "name": option["name"],
+            "schedule": option["schedule"],
+            "youPay": option["youPay"],
+            "planPays": option["planPays"],
+            "benefitUsed": option["scenario"]["in"]["benefitUsed"],
+            "benefitRemaining": option["scenario"]["in"]["benefitRemaining"],
+            "nextYearUsed": option["scenario"]["in"]["nextYearUsed"],
+        }
+        for option in options
+    ]
+    prompt = """Write one short, user-friendly explanation for each deterministic
+dental treatment strategy below. Explain the tradeoff between cost, timing, and
+benefit usage. Use only the supplied numbers. Do not recalculate, correct, or
+invent any number. Return only JSON in this shape:
+{"explanations":{"budget":"...","balanced":"...","premium":"..."}}
+
+COMPUTED STRATEGIES:
+""" + json.dumps(computed, separators=(",", ":"))
+    request = urllib.request.Request(
+        GROQ_URL,
+        data=json.dumps(
+            {
+                "model": os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant"),
+                "temperature": 0,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You explain precomputed dental plan results. "
+                            "Never perform optimization or change numbers."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+            }
+        ).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        content = payload["choices"][0]["message"]["content"]
+        explanations = json.loads(content).get("explanations")
+        if not isinstance(explanations, dict):
+            return {}
+        return {
+            option_id: explanation.strip()
+            for option_id, explanation in explanations.items()
+            if option_id in {"budget", "balanced", "premium"}
+            and isinstance(explanation, str)
+            and explanation.strip()
+        }
+    except (
+        KeyError,
+        TypeError,
+        ValueError,
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+    ):
+        return {}
+
+
+def add_ai_explanations(options: list[dict]) -> list[dict]:
+    explanations = groq_explain_options(options)
+    for option in options:
+        option["aiExplanation"] = explanations.get(option["id"], option["reasoning"])
+    return options
 
 
 def extract_with_fallback(text: str) -> list[dict]:
@@ -751,7 +833,7 @@ def build_response(text: str, email: str | None = None) -> dict:
     visit_date = _field(text, "Visit Date") or date.today().strftime("%b %-d, %Y")
     months = ["Oct", "Nov", "Dec", "Jan"]
     settings = normalize_settings(None)
-    options = build_options(procedures, employee, settings)
+    options = add_ai_explanations(build_options(procedures, employee, settings))
 
     return {
         "provider": provider,
