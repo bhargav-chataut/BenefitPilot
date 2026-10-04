@@ -33,13 +33,13 @@ class OptimizerTests(unittest.TestCase):
         employee = dict(self.employee, remaining_maximum=600, deductible=0)
         procedures = [self.procedure(1000), self.procedure(1000)]
         options = find_best_options(procedures, employee, {"budget": "$1,000"})
-        self.assertEqual(options["budget"][0], [0, 3])
+        self.assertEqual(options["budget"][0], [2, 3])
         self.assertEqual(options["balanced"][0], [0, 3])
         self.assertEqual(options["premium"][0], [0, 0])
         # Without year-boundary savings, affordability spreads the payments.
         employee.update(remaining_maximum=10000, annual_maximum=10000)
         options = find_best_options(procedures, employee, {"budget": "$250"})
-        self.assertEqual(options["budget"][0], [0, 3])
+        self.assertEqual(options["budget"][0], [3, 3])
         self.assertEqual(options["balanced"][0], [0, 1])
         self.assertEqual(options["premium"][0], [0, 0])
 
@@ -47,7 +47,7 @@ class OptimizerTests(unittest.TestCase):
         employee = dict(self.employee, remaining_maximum=1200, annual_maximum=1200, deductible=0)
         options = find_best_options([self.procedure(1000) for _ in range(3)], employee,
                                     {"budget": "$600"})
-        self.assertEqual(options["budget"][0], [0, 0, 3])
+        self.assertEqual(options["budget"][0], [2, 3, 3])
         self.assertEqual(options["balanced"][0], [0, 1, 3])
         self.assertEqual(options["premium"][0], [0, 0, 0])
         self.assertEqual(options["balanced"][1]["peakMonthlyPayment"], 600)
@@ -137,7 +137,7 @@ class OptimizerTests(unittest.TestCase):
         self.assertEqual(options[0]["schedule"], [0, 2])
         self.assertEqual(options[2]["schedule"], [0, 0])
         self.assertEqual(options[0]["youPay"], options[2]["youPay"])
-        self.assertIn("latest feasible completion among cost ties", options[0]["reasoning"])
+        self.assertIn("latest feasible completion and latest overall schedule among cost ties", options[0]["reasoning"])
         self.assertIn("Savings compared with Fastest: $0.00", options[0]["reasoning"])
         self.assertIn("from Oct to Dec", options[0]["reasoning"])
         self.assertIn("No procedures move into the next benefit year", options[0]["reasoning"])

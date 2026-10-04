@@ -70,8 +70,8 @@ the source of truth.
 The optimizer evaluates feasible assignments across October 2026–January 2027:
 
 - **Budget** minimizes total employee cost, then deliberately chooses the latest
-  feasible completion among equal-cost schedules. It minimizes total delay after
-  those ties, so other procedures are not postponed unnecessarily.
+  feasible completion among equal-cost schedules, then the latest overall schedule
+  by maximizing total delay among the remaining ties.
 - **Balanced** prioritizes staying within the monthly budget, then minimizes the
   largest monthly payment and total patient cost, then prefers earlier completion.
 - **Fastest** minimizes completion time, then overall waiting; cost only breaks ties.

@@ -537,7 +537,7 @@ def find_best_options(procedures: list[dict], employee: dict, settings: dict | N
         cost, peak = scenario["youPay"], scenario["peakMonthlyPayment"]
         finish, delay = max(schedule), sum(schedule)
         objectives = {
-            "budget": (cost, -finish, delay),
+            "budget": (cost, -finish, -delay),
             "balanced": (peak > budget, peak, cost, finish, delay),
             "premium": (finish, delay, cost),
         }
@@ -597,7 +597,7 @@ def option_reasoning(name: str, procedures: list[dict], schedule: list[int],
                   f"Costs {money(-savings)} more than Fastest." if savings < 0 else
                   "Savings compared with Fastest: $0.00.")
     objectives = {
-        "budget": "Selected for the lowest total patient cost, then the latest feasible completion among cost ties.",
+        "budget": "Selected for the lowest total patient cost, then the latest feasible completion and latest overall schedule among cost ties.",
         "balanced": "Selected to stay within the monthly budget first, then minimize peak monthly payment and total patient cost, with earlier completion breaking ties.",
         "premium": "Selected for the earliest completion, then the least total delay; cost only breaks ties.",
     }
