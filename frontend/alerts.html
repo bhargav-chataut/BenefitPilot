@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BenefitPilot – Alerts &amp; Reminders</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="alerts.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="tooth" viewBox="0 0 24 24">
+        <path
+          d="M7.2 3C4.9 3 3.2 4.7 3.2 7.2c0 2.2 1 3.6 1.5 5.5.6 2.3.8 6.3 2.4 6.3 1.4 0 1.2-3.4 2-4.8.4-.6.9-.9 1.5-.9h.8c.6 0 1.1.3 1.5.9.8 1.4.6 4.8 2 4.8 1.6 0 1.8-4 2.4-6.3.5-1.9 1.5-3.3 1.5-5.5C20.8 4.7 19.1 3 16.8 3c-1.7 0-2.8.7-4.8.7S8.9 3 7.2 3z"
+        />
+      </symbol>
+    </svg>
+
+    <aside class="sidebar">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><use href="#tooth" /></svg>
+        <span>Benefit<b>Pilot</b></span>
+      </div>
+      <nav class="nav">
+        <a href="dashboard.html"
+          ><svg class="ic" viewBox="0 0 24 24">
+            <path
+              d="M4 11 12 4l8 7v8.5a1 1 0 0 1-1 1h-4.5V15h-5v5.5H5a1 1 0 0 1-1-1V11z"
+            /></svg
+          >Dashboard</a
+        >
+        <a href="results.html"
+          ><svg class="ic" viewBox="0 0 24 24"><use href="#tooth" /></svg
+          >Treatments</a
+        >
+        <a href="alerts.html" class="active" aria-current="page"
+          ><svg class="ic fill" viewBox="0 0 24 24">
+            <path
+              d="M12 2.500a6.500 6.500 0 0 0-6.500 6.500v4.500L3.500 16.500a1 1 0 0 0 .8 1.500h15.400a1 1 0 0 0 .8-1.500l-2-3V9A6.500 6.500 0 0 0 12 2.500zM9.500 19.500a2.500 2.500 0 0 0 5 0z"
+            /></svg
+          >Alerts<span class="badge" id="navBadge" hidden>0</span></a
+        >
+      </nav>
+    </aside>
+
+    <main class="main loading" id="main">
+      <div class="user">
+        <button class="user-btn" type="button" aria-haspopup="menu">
+          <span class="avatar"></span><span id="userName">Bhargav Chataut</span
+          ><svg class="ic chev" viewBox="0 0 24 24">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        <div class="menu" role="menu">
+          <a role="menuitem" href="index.html"
+            ><svg class="ic" viewBox="0 0 24 24">
+              <path
+                d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9"
+              /></svg
+            >Sign out</a
+          >
+        </div>
+      </div>
+
+      <div class="page-head">
+        <div>
+          <h1>Alerts &amp; Reminders</h1>
+          <p class="sub">Stay informed and make the most of your benefits.</p>
+        </div>
+        <p class="updated" id="updated"></p>
+      </div>
+
+      <div class="layout">
+        <!-- Active alerts -->
+        <section
+          class="alerts"
+          id="alerts"
+          aria-label="Active alerts"
+        ></section>
+
+        <aside class="side">
+          <section class="card snap">
+            <h2>Your Benefit Snapshot</h2>
+            <div class="snap-body">
+              <div class="ring">
+                <svg viewBox="0 0 200 200" aria-hidden="true">
+                  <circle class="track" cx="100" cy="100" r="88" />
+                  <circle
+                    class="arc"
+                    id="arc"
+                    cx="100"
+                    cy="100"
+                    r="88"
+                    transform="rotate(-90 100 100)"
+                  />
+                </svg>
+                <div class="ring-c">
+                  <strong id="ringAmt">$0</strong><span>remaining</span>
+                </div>
+              </div>
+              <div class="snap-stats">
+                <div>
+                  <strong id="sMax">$0</strong><small>Annual Maximum</small>
+                </div>
+                <div>
+                  <strong id="sUsed">$0</strong
+                  ><small id="sUsedLbl">Used</small>
+                </div>
+                <div><strong id="sRem">$0</strong><small>Remaining</small></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card dates">
+            <h2>
+              <svg viewBox="0 0 24 24">
+                <rect x="3.5" y="5" width="17" height="15" rx="2.500" />
+                <path d="M3.500 10h17M8 3v4M16 3v4" />
+                <rect
+                  x="7.500"
+                  y="13"
+                  width="3"
+                  height="3"
+                  rx=".6"
+                  fill="currentColor"
+                  stroke="none"
+                /></svg
+              >Important Dates
+            </h2>
+            <ul id="dates"></ul>
+          </section>
+        </aside>
+      </div>
+
+      <!-- Past alerts -->
+      <section class="card past">
+        <div class="past-head">
+          <h2>Past Alerts</h2>
+          <button class="clear" id="clearAll" type="button">Clear All</button>
+        </div>
+        <ul id="past"></ul>
+      </section>
+    </main>
+
+    <script src="alerts.js"></script>
+  </body>
+</html>
