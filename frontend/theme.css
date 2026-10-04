@@ -83,7 +83,12 @@ select:focus-visible, textarea:focus-visible, .al:focus-visible {
 .row2 { margin-top: 20px; }
 .usage-body { margin-top: 12px; }
 .donut { width: 216px; height: 216px; margin: 0 24px 0 8px; }
-.usage .stats { flex: 1; gap: 11px; padding-left: 24px; }
+.usage .stats {
+  flex: 0 1 620px;
+  width: min(100%, 620px);
+  gap: 11px;
+  padding-left: 24px;
+}
 .usage .stats > div { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; }
 .usage .stats small { font-size: 15px; margin: 0; }
 .usage .stats strong { font-size: 30px; text-align: right; }
