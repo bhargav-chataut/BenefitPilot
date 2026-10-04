@@ -1,8 +1,8 @@
 /* ================= CONFIG ================= */
 const AUTH = {
-  LOGIN_URL: "/api/login", // POST JSON { email, password } -> 2xx on success
-  REDIRECT_TO: "dashboard.html", // where to go after sign-in
-  USE_MOCK_ON_ERROR: true, // set to false once your backend is live
+  LOGIN_URL: "/api/login", // POST JSON { email, password }
+  REDIRECT_TO: "results.html", // Go directly to Treatments page
+  USE_MOCK_ON_ERROR: true, // fallback if offline
 };
 
 const $ = (id) => document.getElementById(id);
@@ -23,6 +23,7 @@ function showError(msg) {
   el.textContent = msg;
   el.hidden = !msg;
 }
+
 function setLoading(on) {
   $("signInBtn").disabled = on;
   $("signInBtn").classList.toggle("loading", on);
@@ -46,25 +47,65 @@ form.addEventListener("submit", async (e) => {
 
   setLoading(true);
   try {
+    let payload = null;
     try {
       const res = await fetch(AUTH.LOGIN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      if (res.status === 401 || res.status === 403)
-        throw Object.assign(new Error("bad"), { auth: true });
-      if (!res.ok) throw new Error("Request failed (" + res.status + ")");
+
+      const body = await res.json().catch(() => null);
+
+      if (res.status === 401 || res.status === 403) {
+        throw Object.assign(new Error(body?.error || "Incorrect email or password."), { auth: true });
+      }
+      if (!res.ok) {
+        throw new Error(body?.error || "Request failed (" + res.status + ")");
+      }
+
+      payload = body;
     } catch (err) {
       if (err.auth || !AUTH.USE_MOCK_ON_ERROR) throw err;
-      await new Promise((r) => setTimeout(r, 900)); // demo only: backend not reachable
+
+      // Demo fallback if backend is offline
+      await new Promise((r) => setTimeout(r, 600));
+      payload = {
+        employee: {
+          fullName: "Alex Carter",
+          email: email,
+          employer: "USM",
+          hsaBalance: 500,
+          fsaBalance: 300,
+        },
+        plan: {
+          planName: "Dental PPO Plus",
+          annualMaximum: 2000,
+          deductible: 50,
+        },
+        usage: {
+          annualBenefitUsed: 620,
+          deductibleUsed: 50,
+          annualBenefitRemaining: 1380,
+          deductibleRemaining: 0,
+        },
+        redirectTo: AUTH.REDIRECT_TO,
+      };
     }
-    window.location.href = AUTH.REDIRECT_TO;
+
+    // Save session data for Treatments page to consume
+    if (payload) {
+      sessionStorage.setItem("benefitpilot_session", JSON.stringify(payload));
+    }
+
+    // Go directly to Treatments
+    window.location.href = payload?.redirectTo || AUTH.REDIRECT_TO;
   } catch (err) {
     showError(
-      err.auth
-        ? "Incorrect email or password."
-        : "We couldn’t sign you in. Please try again.",
+      err.message ||
+        (err.auth
+          ? "Incorrect email or password."
+          : "We couldn’t sign you in. Please try again.")
     );
     setLoading(false);
   }

@@ -9,175 +9,216 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="dashboard.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
   </head>
   <body>
+    <!-- Icon sprite -->
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
       <symbol id="tooth" viewBox="0 0 24 24">
         <path
           d="M7.2 3C4.9 3 3.2 4.7 3.2 7.2c0 2.2 1 3.6 1.5 5.5.6 2.3.8 6.3 2.4 6.3 1.4 0 1.2-3.4 2-4.8.4-.6.9-.9 1.5-.9h.8c.6 0 1.1.3 1.5.9.8 1.4.6 4.8 2 4.8 1.6 0 1.8-4 2.4-6.3.5-1.9 1.5-3.3 1.5-5.5C20.8 4.7 19.1 3 16.8 3c-1.7 0-2.8.7-4.8.7S8.9 3 7.2 3z"
         />
       </symbol>
+      <symbol id="dashboard-ic" viewBox="0 0 24 24">
+        <path
+          d="M12 3.2 3.5 10.5a1 1 0 0 0-.3.8V20a1 1 0 0 0 1 1H9v-6h6v6h4.8a1 1 0 0 0 1-1v-8.7a1 1 0 0 0-.3-.8L12 3.2z"
+        />
+      </symbol>
+      <symbol id="alert-ic" viewBox="0 0 24 24">
+        <path
+          d="M6 17.5V11a6 6 0 0 1 12 0v6.5l1.5 1.5h-15L6 17.5zM10 21h4"
+        />
+      </symbol>
+      <symbol id="flag-ic" viewBox="0 0 24 24">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zm0 7v-7" />
+      </symbol>
+      <symbol id="arrow-right" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+      </symbol>
+      <symbol id="check-circle" viewBox="0 0 24 24">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <path d="M22 4 12 14.01l-3-3" />
+      </symbol>
     </svg>
 
+    <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <div class="logo">
         <svg viewBox="0 0 24 24"><use href="#tooth" /></svg>
         <span>Benefit<b>Pilot</b></span>
       </div>
       <nav class="nav">
-        <a href="dashboard.html" class="active" aria-current="page"
-          ><svg class="ic fill" viewBox="0 0 24 24">
-            <path
-              d="M12 3.200 3.500 10.500a1 1 0 0 0-.3.800V20a1 1 0 0 0 1 1H9v-6h6v6h4.800a1 1 0 0 0 1-1v-8.700a1 1 0 0 0-.3-.8L12 3.200z"
-            /></svg
-          >Dashboard</a
-        >
-        <a href="results.html"
-          ><svg class="ic" viewBox="0 0 24 24"><use href="#tooth" /></svg
-          >Treatments</a
-        >
-        <a href="#"
-          ><svg class="ic" viewBox="0 0 24 24">
-            <path
-              d="M6 17.500V11a6 6 0 0 1 12 0v6.500l1.500 1.500h-15L6 17.500zM10 21h4"
-            /></svg
-          >Alerts</a
-        >
+        <a href="dashboard.html" class="active" aria-current="page">
+          <svg class="ic fill"><use href="#dashboard-ic" /></svg>
+          Dashboard
+        </a>
+        <a href="treatments.html">
+          <svg class="ic"><use href="#tooth" /></svg>
+          Treatments
+        </a>
+        <a href="alerts.html">
+          <svg class="ic"><use href="#alert-ic" /></svg>
+          Alerts
+          <span class="nav-badge" id="navAlertBadge">1</span>
+        </a>
       </nav>
-    </aside>
-
-    <main class="main loading" id="main">
-      <div class="user">
-        <button class="user-btn" type="button" aria-haspopup="menu">
-          <span class="avatar"></span><span id="userName">Bhargav Chataut</span
-          ><svg class="ic chev" viewBox="0 0 24 24">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </button>
-        <div class="menu" role="menu">
-          <a role="menuitem" href="index.html"
-            ><svg class="ic" viewBox="0 0 24 24">
-              <path
-                d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9"
-              /></svg
-            >Sign out</a
-          >
+      <div class="sidebar-footer">
+        <div class="demo-pill">
+          <span class="pulse-dot"></span>
+          <span>Lincoln PPO Active</span>
         </div>
       </div>
+    </aside>
 
-      <h1>Dashboard</h1>
-      <p class="sub">Track your dental benefits and upcoming care.</p>
+    <!-- Main Workspace -->
+    <main class="main" id="main">
+      <!-- Top Context Header -->
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">Financial Wellness · Dental Benefits</span>
+          <h1>Benefits Dashboard</h1>
+        </div>
 
-      <!-- ============ Annual Maximum Usage ============ -->
-      <section class="card usage">
-        <header class="card-head">
-          <span class="ibox"
-            ><svg class="ic" viewBox="0 0 24 24">
-              <ellipse cx="12" cy="5.500" rx="7.500" ry="2.800" />
-              <path
-                d="M4.500 5.500v4.300c0 1.500 3.400 2.800 7.500 2.800s7.500-1.300 7.500-2.800V5.500M4.500 9.800v4.300c0 1.500 3.400 2.800 7.500 2.800s7.500-1.300 7.500-2.800V9.800M4.500 14.100v4.300c0 1.500 3.400 2.800 7.500 2.800s7.500-1.300 7.500-2.800v-4.300"
-              /></svg
-          ></span>
-          <div class="titles">
-            <h2>Annual Maximum Usage</h2>
-            <p>
-              Your <span id="yearLabel">2026</span> dental plan benefits at a
-              glance.
-            </p>
+        <div class="user">
+          <button class="user-btn" type="button" aria-haspopup="menu" id="userMenuBtn">
+            <span class="avatar"></span>
+            <span id="userName">Alex Carter</span>
+            <svg class="ic chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+          </button>
+          <div class="menu" role="menu" id="userDropdown">
+            <div class="menu-header">
+              <strong id="menuUserName">Alex Carter</strong>
+              <small id="menuUserEmployer">USM</small>
+            </div>
+            <a role="menuitem" href="results.html">Treatments Optimizer</a>
+            <a role="menuitem" href="index.html" id="signOutLink">Sign out</a>
           </div>
-          <span class="plan-pill" id="planYear"></span>
-        </header>
+        </div>
+      </header>
 
-        <div class="usage-body">
-          <div class="donut">
-            <svg viewBox="0 0 200 200" aria-hidden="true">
-              <circle class="track" cx="100" cy="100" r="88" />
-              <circle
-                class="arc"
-                id="arc"
-                cx="100"
-                cy="100"
-                r="88"
-                transform="rotate(-90 100 100)"
-              />
-            </svg>
-            <div class="donut-c">
-              <strong id="pct">0%</strong><span>used</span>
+      <!-- ============ TOP-RIGHT COMPACT ALERT POPUP ============ -->
+      <aside class="alert-toast" id="alertToast" role="alert" aria-live="polite" aria-label="Benefit Notification">
+        <div class="toast-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        </div>
+        <div class="toast-body">
+          <strong class="toast-title">Benefit Alert</strong>
+          <p class="toast-text" id="toastMessage">You are projected to use 99% of this year’s benefit.</p>
+          <a href="alerts.html" class="toast-link" id="toastAction">
+            <span>View alert</span>
+            <span class="toast-arrow">→</span>
+          </a>
+        </div>
+        <button type="button" class="toast-dismiss" id="toastDismissBtn" aria-label="Dismiss alert">
+          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </aside>
+
+      <!-- ============ CORE BENEFIT SUMMARY CARD ============ -->
+      <section class="card benefit-summary-card" aria-label="Dental Benefit Summary">
+        <!-- Top Meta Row: Employee, Plan, Year, Deductible -->
+        <div class="summary-topline">
+          <div class="summary-identity">
+            <div class="employee-pill">
+              <span class="pill-dot"></span>
+              <span class="employee-label">Employee:</span>
+              <strong id="employeeName">Alex Carter</strong>
+            </div>
+            <div class="plan-pill-group">
+              <span class="badge blue" id="planBadge">Lincoln Dental PPO Plus</span>
+              <span class="plan-year-text" id="planYearText">Plan Year: Jan 1 – Dec 31, 2026</span>
             </div>
           </div>
-          <div class="stats">
-            <div><small>Annual maximum</small><strong id="max">$0</strong></div>
-            <div>
-              <small>Used</small><strong class="blue" id="used">$0</strong>
+          <div class="deductible-badge" id="deductibleBadge">
+            <svg class="ic sm" viewBox="0 0 24 24"><use href="#check-circle" /></svg>
+            <span>Deductible Status: <b id="deductibleStatus">$50 of $50 met</b></span>
+          </div>
+        </div>
+
+        <!-- Big Highlight Metric: Current Benefit Remaining -->
+        <div class="summary-balance-hero">
+          <div class="balance-hero-main">
+            <span class="balance-hero-label">Current Benefit Remaining</span>
+            <div class="big-metric">
+              <span class="curr">$</span><span id="remainingHero">1,380</span>
             </div>
-            <div>
-              <small>Remaining</small
-              ><strong class="green" id="remaining">$0</strong>
+            <span class="balance-sub">available to spend before <b>Dec 31, 2026</b></span>
+          </div>
+
+          <!-- Secondary Metric Cards (Restrained & Compact) -->
+          <div class="balance-meta-grid">
+            <div class="meta-card">
+              <span class="meta-label">Annual Maximum</span>
+              <strong class="meta-val" id="maxHero">$2,000</strong>
+              <span class="meta-sub">Full annual allowance</span>
             </div>
+            <div class="meta-card">
+              <span class="meta-label">Used So Far</span>
+              <strong class="meta-val text-used" id="usedHero">$620</strong>
+              <span class="meta-sub" id="usedSubText">31% of maximum</span>
+            </div>
+            <div class="meta-card">
+              <span class="meta-label">Projected After Care</span>
+              <strong class="meta-val text-planned" id="bufferHero">~$880</strong>
+              <span class="meta-sub" id="bufferSubText">~44% remaining</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clean Multi-Segment Visual Utilization Bar -->
+        <div class="utilization-bar-wrapper">
+          <div class="breakdown-header">
+            <span class="breakdown-title">Usage Breakdown</span>
+            <div class="breakdown-tags">
+              <span class="breakdown-tag tag-used" id="tagUsed">31% Used</span>
+              <span class="breakdown-tag tag-planned" id="tagPlanned">25% Planned</span>
+              <span class="breakdown-tag tag-remaining" id="tagRemaining">44% Remaining</span>
+            </div>
+          </div>
+
+          <div class="utilization-bar" role="progressbar" aria-label="Benefit usage breakdown" aria-valuemin="0" aria-valuemax="100">
+            <div class="seg seg-used" style="width: 31%" title="Used: $620 (31%)"></div>
+            <div class="seg seg-planned" style="width: 25%" title="Planned: $500 (25%)"></div>
+            <div class="seg seg-remaining" style="width: 44%" title="Remaining: $880 (44%)"></div>
+          </div>
+
+          <!-- Compact Summary Legend (no duplicate percentage text) -->
+          <div class="bar-legend">
+            <span class="legend-item">
+              <i class="swatch swatch-used"></i>
+              <span><b id="summaryUsed">$620</b> Used</span>
+            </span>
+            <span class="legend-item">
+              <i class="swatch swatch-planned"></i>
+              <span><b id="summaryPlanned">$500</b> Planned</span>
+            </span>
+            <span class="legend-item">
+              <i class="swatch swatch-remaining"></i>
+              <span><b id="summaryBuffer">~$880</b> Remaining</span>
+            </span>
           </div>
         </div>
       </section>
 
-      <div class="row2">
-        <!-- ============ Year at a glance ============ -->
-        <section class="card glance">
-          <header class="card-head">
-            <span class="ibox sm"
-              ><svg viewBox="0 0 24 24" fill="currentColor">
-                <rect x="3" y="12" width="4.500" height="8" rx="1.200" />
-                <rect x="9.800" y="7" width="4.500" height="13" rx="1.200" />
-                <rect
-                  x="16.500"
-                  y="3"
-                  width="4.500"
-                  height="17"
-                  rx="1.200"
-                /></svg
-            ></span>
-            <div class="titles">
-              <h2>Year-at-a-glance</h2>
-              <p>
-                Your benefit usage across the plan year (including projected).
-              </p>
-            </div>
-            <div class="legend">
-              <span><i class="dot"></i>Used</span
-              ><span><i class="dot proj"></i>Projected</span>
-            </div>
-          </header>
-          <div class="chart">
-            <div class="yaxis" id="yaxis"></div>
-            <div class="plot" id="plot"></div>
-            <div class="xaxis" id="xaxis"></div>
-          </div>
-        </section>
-
-        <!-- ============ Upcoming care ============ -->
-        <section class="card upcoming">
-          <header class="card-head">
-            <span class="ibox sm"
-              ><svg class="ic" viewBox="0 0 24 24">
-                <rect x="3.500" y="5" width="17" height="15" rx="2.500" />
-                <path d="M3.500 10h17M8 3v4M16 3v4" />
-                <rect
-                  x="7.500"
-                  y="13"
-                  width="3"
-                  height="3"
-                  rx=".6"
-                  fill="currentColor"
-                  stroke="none"
-                /></svg
-            ></span>
-            <div class="titles"><h2>Upcoming Care</h2></div>
-            <a class="view-all" href="results.html">View All</a>
-          </header>
-          <ul class="events" id="events"></ul>
-        </section>
-      </div>
+      <!-- ============ MINIMAL TEXT-STYLE NAVIGATION LINKS ============ -->
+      <nav class="dashboard-text-links" aria-label="Secondary navigation">
+        <a href="benefit-timeline.html" class="minimal-link">
+          <span>View benefit timeline</span>
+          <span class="link-arrow">→</span>
+        </a>
+        <span class="link-divider" aria-hidden="true">·</span>
+        <a href="alerts.html" class="minimal-link">
+          <span>View alerts</span>
+          <span class="link-arrow">→</span>
+        </a>
+        <span class="link-divider" aria-hidden="true">·</span>
+        <a href="treatments.html" class="minimal-link">
+          <span>Manage treatments</span>
+          <span class="link-arrow">→</span>
+        </a>
+      </nav>
     </main>
 
-    <script src="dashboard.js"></script>
+    <script src="js/dashboard.js"></script>
   </body>
 </html>

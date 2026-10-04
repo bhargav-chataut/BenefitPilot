@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BenefitPilot – Benefit Usage Timeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/benefit-timeline.css" />
+  </head>
+  <body>
+    <!-- Icon sprite -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="tooth" viewBox="0 0 24 24">
+        <path
+          d="M7.2 3C4.9 3 3.2 4.7 3.2 7.2c0 2.2 1 3.6 1.5 5.5.6 2.3.8 6.3 2.4 6.3 1.4 0 1.2-3.4 2-4.8.4-.6.9-.9 1.5-.9h.8c.6 0 1.1.3 1.5.9.8 1.4.6 4.8 2 4.8 1.6 0 1.8-4 2.4-6.3.5-1.9 1.5-3.3 1.5-5.5C20.8 4.7 19.1 3 16.8 3c-1.7 0-2.8.7-4.8.7S8.9 3 7.2 3z"
+        />
+      </symbol>
+      <symbol id="dashboard-ic" viewBox="0 0 24 24">
+        <path
+          d="M12 3.2 3.5 10.5a1 1 0 0 0-.3.8V20a1 1 0 0 0 1 1H9v-6h6v6h4.8a1 1 0 0 0 1-1v-8.7a1 1 0 0 0-.3-.8L12 3.2z"
+        />
+      </symbol>
+      <symbol id="alert-ic" viewBox="0 0 24 24">
+        <path
+          d="M6 17.5V11a6 6 0 0 1 12 0v6.5l1.5 1.5h-15L6 17.5zM10 21h4"
+        />
+      </symbol>
+      <symbol id="arrow-left" viewBox="0 0 24 24">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </symbol>
+      <symbol id="arrow-right" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+      </symbol>
+      <symbol id="flag-ic" viewBox="0 0 24 24">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zm0 7v-7" />
+      </symbol>
+      <symbol id="info-circle" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
+      </symbol>
+    </svg>
+
+    <!-- Sidebar Navigation (Preserving Standard 3 Items) -->
+    <aside class="sidebar">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><use href="#tooth" /></svg>
+        <span>Benefit<b>Pilot</b></span>
+      </div>
+      <nav class="nav">
+        <a href="dashboard.html">
+          <svg class="ic"><use href="#dashboard-ic" /></svg>
+          Dashboard
+        </a>
+        <a href="treatments.html">
+          <svg class="ic"><use href="#tooth" /></svg>
+          Treatments
+        </a>
+        <a href="alerts.html">
+          <svg class="ic"><use href="#alert-ic" /></svg>
+          Alerts
+          <span class="nav-badge">4</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="demo-pill">
+          <span class="pulse-dot"></span>
+          <span>Lincoln PPO Active</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main" id="main">
+      <div class="timeline-page-container">
+        <!-- Back to Dashboard Link -->
+        <a href="dashboard.html" class="back-link">
+          <svg class="ic sm" viewBox="0 0 24 24"><use href="#arrow-left" /></svg>
+          <span>Back to Dashboard</span>
+        </a>
+
+        <!-- Top Header & Context -->
+        <header class="timeline-header">
+          <div class="header-topline">
+            <h1>Benefit Usage Timeline</h1>
+            <span class="year-badge">Plan Year: 2026</span>
+          </div>
+          <p class="timeline-subtitle">
+            See how your past claims, upcoming care, and plan-year reset affect your dental benefits.
+          </p>
+        </header>
+
+        <!-- ============ SECTION 1: SUMMARY ROW ============ -->
+        <section class="summary-grid" aria-label="Benefits Summary">
+          <div class="summary-card">
+            <small>Annual Maximum</small>
+            <div class="stat-val" id="tMax">$1,500</div>
+            <span class="stat-meta">Full policy allowance</span>
+          </div>
+
+          <div class="summary-card highlight-blue">
+            <small>Used So Far</small>
+            <div class="stat-val" id="tUsed">$980</div>
+            <span class="stat-meta" id="tUsedMeta">65% claims paid</span>
+          </div>
+
+          <div class="summary-card highlight-amber">
+            <small>Upcoming Planned Use</small>
+            <div class="stat-val" id="tPlanned">$500</div>
+            <span class="stat-meta" id="tPlannedMeta">3 scheduled treatments</span>
+          </div>
+
+          <div class="summary-card highlight-green">
+            <small>Projected Remaining</small>
+            <div class="stat-val" id="tRemaining">$20</div>
+            <span class="stat-meta" id="tRemainingMeta">~1% buffer at year-end</span>
+          </div>
+
+          <div class="summary-card">
+            <small>Plan Reset</small>
+            <div class="stat-val" id="tReset">Jan 1, 2027</div>
+            <span class="stat-meta">New $1,500 maximum starts</span>
+          </div>
+        </section>
+
+        <!-- ============ SECTION 2: VISUAL CHRONOLOGICAL TIMELINE ============ -->
+        <section class="timeline-main-card">
+          <div class="timeline-card-header">
+            <h2>Chronological Usage Track (2026 – 2027)</h2>
+            <div class="timeline-legend-row">
+              <span class="legend-item"><i class="swatch-past"></i> Past Claims</span>
+              <span class="legend-item"><i class="swatch-future"></i> Planned Care</span>
+              <span class="legend-item"><i class="swatch-reset"></i> Plan Reset</span>
+            </div>
+          </div>
+
+          <div class="timeline-viewport">
+            <div class="timeline-rail-large">
+              <!-- 1. Past Claims Zone (Jan - Sep) -->
+              <div class="zone-past">
+                <div class="past-banner">
+                  <span>Jan – Sep 2026: <b id="tPastBannerText">$980 Paid Claims</b></span>
+                </div>
+                <div class="past-months-row">
+                  <span class="past-m" title="Jan: $90">Jan</span>
+                  <span class="past-m" title="Feb: $180">Feb</span>
+                  <span class="past-m" title="Mar: $150">Mar</span>
+                  <span class="past-m" title="Apr: $70">Apr</span>
+                  <span class="past-m" title="May: $180">May</span>
+                  <span class="past-m" title="Jun: $120">Jun</span>
+                  <span class="past-m" title="Jul: $90">Jul</span>
+                  <span class="past-m" title="Aug: $70">Aug</span>
+                  <span class="past-m" title="Sep: $30">Sep</span>
+                </div>
+              </div>
+
+              <!-- 2. Upcoming Planned Care Zone (Oct - Dec) -->
+              <div class="zone-future">
+                <!-- Node 1: Oct 15 -->
+                <a href="treatments.html" class="timeline-pin" title="Click to view in treatments planner">
+                  <div class="pin-bubble">
+                    <span class="pin-date-tag">OCT 15</span>
+                    <strong class="pin-name">Filling #1</strong>
+                    <span class="pin-benefit">Benefit used: ~$180</span>
+                    <span class="pin-youpay">You pay: ~$70</span>
+                  </div>
+                  <div class="pin-pole"></div>
+                  <div class="pin-anchor-dot"></div>
+                </a>
+
+                <!-- Node 2: Nov 12 -->
+                <a href="treatments.html" class="timeline-pin" title="Click to view in treatments planner">
+                  <div class="pin-bubble">
+                    <span class="pin-date-tag">NOV 12</span>
+                    <strong class="pin-name">Filling #2</strong>
+                    <span class="pin-benefit">Benefit used: ~$200</span>
+                    <span class="pin-youpay">You pay: ~$25</span>
+                  </div>
+                  <div class="pin-pole"></div>
+                  <div class="pin-anchor-dot"></div>
+                </a>
+
+                <!-- Node 3: Dec 18 (Crown) -->
+                <a href="treatments.html" class="timeline-pin" title="Click to view in treatments planner">
+                  <div class="pin-bubble warning">
+                    <span class="pin-date-tag">DEC 18</span>
+                    <strong class="pin-name">Crown (#30)</strong>
+                    <span class="pin-benefit">Benefit used: ~$120</span>
+                    <span class="pin-youpay">You pay: ~$1,280</span>
+                    <span class="pin-flag-pill">Hits 99% Limit</span>
+                  </div>
+                  <div class="pin-pole"></div>
+                  <div class="pin-anchor-dot"></div>
+                </a>
+              </div>
+
+              <!-- 3. Plan Reset Milestone Zone -->
+              <div class="zone-reset">
+                <div class="reset-card">
+                  <div class="reset-icon">🚩</div>
+                  <strong>JAN 1, 2027</strong>
+                  <span>Plan Reset</span>
+                  <small class="reset-renew">+$1,500 Available</small>
+                </div>
+                <div class="reset-pole"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ SECTION 3: STRATEGIC INSIGHT ============ -->
+        <section class="insight-card">
+          <div class="insight-header">
+            <span class="insight-badge">Timing Insight</span>
+            <h3>Plan-Year Optimization Opportunity</h3>
+          </div>
+          <div class="insight-text">
+            <p id="tInsightPrimary">
+              Based on your planned care, your remaining annual benefit may be <b>nearly exhausted ($1,480 of $1,500, or about 99% used)</b> by the end of the year.
+            </p>
+            <p id="tInsightOpportunity">
+              Moving eligible care into the next plan year may shift benefit usage into the renewed annual maximum.
+            </p>
+            <p class="disclaimer-text">
+              Treatment timing should only change if your dentist confirms it is clinically appropriate.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============ SECTION 4: ACTION ROW ============ -->
+        <section class="action-row">
+          <div class="action-info">
+            <h4>Ready to test different treatment dates?</h4>
+            <p>Compare costs when moving procedures between 2026 and 2027.</p>
+          </div>
+          <div class="action-btns">
+            <a href="dashboard.html" class="btn btn-outline">Back to Dashboard</a>
+            <a href="treatments.html" class="btn btn-primary" id="optimizeCtaBtn">
+              <span>Optimize Care Schedule</span>
+              <svg class="ic sm" viewBox="0 0 24 24"><use href="#arrow-right" /></svg>
+            </a>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="js/benefit-timeline.js"></script>
+  </body>
+</html>

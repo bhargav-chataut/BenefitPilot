@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BenefitPilot – Alerts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/alerts.css" />
+  </head>
+  <body>
+    <!-- Icon sprite -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="tooth" viewBox="0 0 24 24">
+        <path
+          d="M7.2 3C4.9 3 3.2 4.7 3.2 7.2c0 2.2 1 3.6 1.5 5.5.6 2.3.8 6.3 2.4 6.3 1.4 0 1.2-3.4 2-4.8.4-.6.9-.9 1.5-.9h.8c.6 0 1.1.3 1.5.9.8 1.4.6 4.8 2 4.8 1.6 0 1.8-4 2.4-6.3.5-1.9 1.5-3.3 1.5-5.5C20.8 4.7 19.1 3 16.8 3c-1.7 0-2.8.7-4.8.7S8.9 3 7.2 3z"
+        />
+      </symbol>
+      <symbol id="dashboard-ic" viewBox="0 0 24 24">
+        <path
+          d="M12 3.2 3.5 10.5a1 1 0 0 0-.3.8V20a1 1 0 0 0 1 1H9v-6h6v6h4.8a1 1 0 0 0 1-1v-8.7a1 1 0 0 0-.3-.8L12 3.2z"
+        />
+      </symbol>
+      <symbol id="alert-ic" viewBox="0 0 24 24">
+        <path
+          d="M6 17.5V11a6 6 0 0 1 12 0v6.5l1.5 1.5h-15L6 17.5zM10 21h4"
+        />
+      </symbol>
+      <symbol id="arrow-right" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+      </symbol>
+      <symbol id="warning-circle" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </symbol>
+      <symbol id="calendar-reset" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </symbol>
+      <symbol id="sparkles" viewBox="0 0 24 24">
+        <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z" />
+      </symbol>
+    </svg>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><use href="#tooth" /></svg>
+        <span>Benefit<b>Pilot</b></span>
+      </div>
+      <nav class="nav">
+        <a href="dashboard.html">
+          <svg class="ic"><use href="#dashboard-ic" /></svg>
+          Dashboard
+        </a>
+        <a href="treatments.html">
+          <svg class="ic"><use href="#tooth" /></svg>
+          Treatments
+        </a>
+        <a href="alerts.html" class="active" aria-current="page">
+          <svg class="ic fill"><use href="#alert-ic" /></svg>
+          Alerts
+          <span class="nav-badge" id="navAlertCount">4</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="demo-pill">
+          <span class="pulse-dot"></span>
+          <span>Lincoln PPO Active</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main" id="main">
+      <!-- Top Context Header -->
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">Financial Wellness · Notifications</span>
+          <h1>Benefit Alerts</h1>
+        </div>
+
+        <div class="user">
+          <button class="user-btn" type="button" aria-haspopup="menu" id="userMenuBtn">
+            <span class="avatar"></span>
+            <span id="userName">Alex Carter</span>
+            <svg class="ic chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+          </button>
+          <div class="menu" role="menu" id="userDropdown">
+            <div class="menu-header">
+              <strong id="menuUserName">Alex Carter</strong>
+              <small id="menuUserEmployer">USM</small>
+            </div>
+            <a role="menuitem" href="dashboard.html">Dashboard</a>
+            <a role="menuitem" href="treatments.html">Treatments Optimizer</a>
+            <a role="menuitem" href="index.html" id="signOutLink">Sign out</a>
+          </div>
+        </div>
+      </header>
+
+      <div class="alerts-container">
+        <!-- Filter Tabs -->
+        <div class="alerts-filter-bar">
+          <button class="filter-btn active" data-filter="all">All Alerts <span class="count">4</span></button>
+          <button class="filter-btn" data-filter="action">Action Needed <span class="count">2</span></button>
+          <button class="filter-btn" data-filter="reminders">Plan Deadlines <span class="count">1</span></button>
+          <button class="filter-btn" data-filter="accounts">FSA / HSA <span class="count">1</span></button>
+        </div>
+
+        <!-- ============ ALERT 1: NEAR ANNUAL MAXIMUM ============ -->
+        <article class="alert-item-card severity-high" data-category="action">
+          <div class="alert-head">
+            <div class="alert-title-wrap">
+              <div class="alert-icon amber">
+                <svg class="ic sm" viewBox="0 0 24 24"><use href="#warning-circle" /></svg>
+              </div>
+              <div>
+                <h2>Near Annual Maximum</h2>
+                <span class="text-muted" style="font-size: 12px">Plan Utilization Warning</span>
+              </div>
+            </div>
+            <span class="alert-tag amber" id="alert1Tag">Action Recommended</span>
+          </div>
+
+          <p class="alert-body-text" id="alert1Body">
+            You currently have <b>$520</b> in available dental benefits. Based on your 3 planned procedures (Filling #1, Filling #2, Crown), you are projected to use <b>$500</b>, leaving approximately <b>$20 remaining (~1%)</b> before your benefit caps out.
+          </p>
+
+          <div class="alert-callout-box amber">
+            <div class="alert-metric-group">
+              <div class="alert-metric-item">
+                <small>Annual Maximum</small>
+                <strong id="alert1Max">$1,500</strong>
+              </div>
+              <div class="alert-metric-item">
+                <small>Claims Paid</small>
+                <strong class="text-blue" id="alert1Used">$980 (65%)</strong>
+              </div>
+              <div class="alert-metric-item">
+                <small>Planned Care</small>
+                <strong class="text-navy" id="alert1Planned">$500 (33%)</strong>
+              </div>
+              <div class="alert-metric-item">
+                <small>Projected Left</small>
+                <strong class="text-amber" id="alert1Remaining">~$20 (~1%)</strong>
+              </div>
+            </div>
+            <a href="treatments.html" class="btn btn-primary btn-sm">
+              <span>Review Treatment Timing</span>
+              <svg class="ic xs" viewBox="0 0 24 24"><use href="#arrow-right" /></svg>
+            </a>
+          </div>
+
+          <div class="alert-footer">
+            <span class="alert-timestamp">Updated automatically based on your treatment plan</span>
+            <div class="alert-actions">
+              <a href="dashboard.html" class="btn btn-outline btn-sm">View Timeline on Dashboard</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ============ ALERT 2: PLAN RESET REMINDER ============ -->
+        <article class="alert-item-card severity-info" data-category="reminders">
+          <div class="alert-head">
+            <div class="alert-title-wrap">
+              <div class="alert-icon blue">
+                <svg class="ic sm" viewBox="0 0 24 24"><use href="#calendar-reset" /></svg>
+              </div>
+              <div>
+                <h2>Plan Reset Reminder</h2>
+                <span class="text-muted" style="font-size: 12px">Year-End Expiration Notice</span>
+              </div>
+            </div>
+            <span class="alert-tag blue">Jan 1, 2027 Reset</span>
+          </div>
+
+          <p class="alert-body-text">
+            Your employer dental plan resets annually on <b>January 1, 2027</b>. Unused benefit maximums do <b>not roll over</b> into the next plan year. Any remaining allowance from your current $1,500 maximum expires on December 31, 2026 at 11:59 PM.
+          </p>
+
+          <div class="alert-callout-box blue">
+            <div class="alert-metric-group">
+              <div class="alert-metric-item">
+                <small>Current Plan Year</small>
+                <strong>Jan 1 – Dec 31, 2026</strong>
+              </div>
+              <div class="alert-metric-item">
+                <small>Reset Date</small>
+                <strong class="text-blue">January 1, 2027</strong>
+              </div>
+              <div class="alert-metric-item">
+                <small>New Benefit Unlocked</small>
+                <strong class="text-green">+$1,500 Fresh Maximum</strong>
+              </div>
+            </div>
+            <span class="badge blue">Auto-Renews Jan 1</span>
+          </div>
+
+          <div class="alert-footer">
+            <span class="alert-timestamp">Policy notice for Lincoln Dental PPO Plus</span>
+            <div class="alert-actions">
+              <a href="treatments.html" class="btn btn-outline btn-sm">Schedule Procedures Across Reset</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ============ ALERT 3: UPCOMING TREATMENT IMPACT ============ -->
+        <article class="alert-item-card severity-high" data-category="action">
+          <div class="alert-head">
+            <div class="alert-title-wrap">
+              <div class="alert-icon amber">
+                <svg class="ic sm" viewBox="0 0 24 24"><use href="#tooth" /></svg>
+              </div>
+              <div>
+                <h2>Upcoming Treatment: Crown (#30) Cost Alert</h2>
+                <span class="text-muted" style="font-size: 12px">Scheduled for December 18, 2026</span>
+              </div>
+            </div>
+            <span class="alert-tag amber">High Copay Warning</span>
+          </div>
+
+          <p class="alert-body-text">
+            Your planned <b>Crown (#30)</b> on <b>Dec 18, 2026</b> requires a total cost of <b>$1,400</b>. Because prior fillings consume most of your remaining balance, insurance can only pay <b>$120</b> before hitting your annual limit, leaving you with an estimated <b>$1,280 out-of-pocket cost</b>.
+          </p>
+
+          <div class="alert-callout-box amber">
+            <div class="alert-metric-group">
+              <div class="alert-metric-item">
+                <small>Total Procedure Cost</small>
+                <strong>$1,400</strong>
+              </div>
+              <div class="alert-metric-item">
+                <small>Insurance Pays (2026)</small>
+                <strong class="text-blue">$120 (Maxed Out)</strong>
+              </div>
+              <div class="alert-metric-item">
+                <small>You Pay (2026)</small>
+                <strong class="text-amber">$1,280</strong>
+              </div>
+              <div class="alert-metric-item">
+                <small>If Shifted to Jan 2027</small>
+                <strong class="text-green">Save up to $700+</strong>
+              </div>
+            </div>
+            <a href="treatments.html" class="btn btn-primary btn-sm">
+              <span>Shift Procedure in Planner</span>
+              <svg class="ic xs" viewBox="0 0 24 24"><use href="#arrow-right" /></svg>
+            </a>
+          </div>
+
+          <div class="alert-footer">
+            <span class="alert-timestamp">Opportunity detected by BenefitPilot AI Optimizer</span>
+            <div class="alert-actions">
+              <a href="treatments.html" class="btn btn-outline btn-sm">Compare Network Costs</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ============ ALERT 4: FSA REMINDER ============ -->
+        <article class="alert-item-card severity-neutral" data-category="accounts">
+          <div class="alert-head">
+            <div class="alert-title-wrap">
+              <div class="alert-icon green">
+                <svg class="ic sm" viewBox="0 0 24 24"><use href="#sparkles" /></svg>
+              </div>
+              <div>
+                <h2>Flexible Spending Account (FSA) Reminder</h2>
+                <span class="text-muted" style="font-size: 12px">Tax-Advantaged Healthcare Funds</span>
+              </div>
+            </div>
+            <span class="alert-tag green" id="alertFsaTag">$300 Available</span>
+          </div>
+
+          <p class="alert-body-text" id="alertFsaBody">
+            You have an estimated <b>$300</b> remaining in your employer Flexible Spending Account (FSA). FSA funds are subject to annual "use-it-or-lose-it" IRS deadlines. You can use these pre-tax funds to cover your dental copays and deductible.
+          </p>
+
+          <div class="alert-footer">
+            <span class="alert-timestamp">Tax savings tip: Pay dental copays directly with your FSA debit card</span>
+            <div class="alert-actions">
+              <a href="dashboard.html" class="btn btn-outline btn-sm">Return to Dashboard</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </main>
+
+    <script src="js/alerts.js"></script>
+  </body>
+</html>

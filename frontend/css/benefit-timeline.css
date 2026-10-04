@@ -1,0 +1,528 @@
+@import url("shared.css");
+
+/* ================= BENEFIT TIMELINE PAGE ================= */
+.timeline-page-container {
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Back Link */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--navy-500);
+  text-decoration: none;
+  margin-bottom: 4px;
+  width: fit-content;
+  transition: all 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--blue-primary);
+  transform: translateX(-2px);
+}
+
+.back-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Page Header */
+.timeline-header {
+  margin-bottom: 8px;
+}
+
+.header-topline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.timeline-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--navy-900);
+}
+
+.year-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  background: var(--blue-soft);
+  color: var(--blue-primary);
+  border: 1px solid var(--blue-border);
+  border-radius: 999px;
+}
+
+.timeline-subtitle {
+  font-size: 14.5px;
+  color: var(--navy-500);
+  max-width: 720px;
+}
+
+/* ================= SECTION 1: SUMMARY ROW ================= */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+.summary-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.summary-card small {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--navy-400);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-card .stat-val {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--navy-900);
+  line-height: 1.1;
+}
+
+.summary-card .stat-meta {
+  font-size: 11.5px;
+  color: var(--navy-400);
+}
+
+.summary-card.highlight-green .stat-val {
+  color: var(--green-500);
+}
+
+.summary-card.highlight-amber .stat-val {
+  color: var(--amber-600);
+}
+
+.summary-card.highlight-blue .stat-val {
+  color: var(--blue-primary);
+}
+
+/* ================= SECTION 2: VISUAL TIMELINE CARD ================= */
+.timeline-main-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+}
+
+.timeline-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--navy-100);
+}
+
+.timeline-card-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy-900);
+}
+
+.timeline-legend-row {
+  display: flex;
+  gap: 20px;
+  font-size: 12.5px;
+  color: var(--navy-500);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch-past {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--navy-300);
+}
+
+.swatch-future {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--blue-primary);
+}
+
+.swatch-reset {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red-500);
+}
+
+/* Interactive Timeline Track */
+.timeline-viewport {
+  overflow-x: auto;
+  padding: 24px 8px 30px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.timeline-rail-large {
+  display: flex;
+  align-items: flex-end;
+  min-width: 860px;
+  position: relative;
+  padding-bottom: 24px;
+}
+
+/* Past Claims Zone (Jan - Sep) */
+.zone-past {
+  flex: 3.2;
+  position: relative;
+  border-bottom: 3px solid var(--navy-300);
+  padding-bottom: 14px;
+}
+
+.past-banner {
+  background: #f8fafc;
+  border: 1px dashed var(--navy-300);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.past-banner span {
+  font-size: 12.5px;
+  color: var(--navy-500);
+}
+
+.past-banner b {
+  color: var(--navy-700);
+}
+
+.past-months-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.past-m {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--navy-400);
+  position: relative;
+  text-align: center;
+}
+
+.past-m::after {
+  content: "";
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--navy-300);
+}
+
+/* Upcoming Planned Care Zone (Oct - Dec) */
+.zone-future {
+  flex: 4.4;
+  display: flex;
+  justify-content: space-around;
+  border-bottom: 3px solid var(--blue-primary);
+  padding-bottom: 14px;
+  position: relative;
+}
+
+.timeline-pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.timeline-pin:hover {
+  transform: translateY(-4px);
+}
+
+.pin-bubble {
+  background: #ffffff;
+  border: 1px solid var(--blue-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-md);
+  min-width: 145px;
+  text-align: left;
+}
+
+.pin-bubble.warning {
+  border-color: var(--amber-border);
+  background: #fffdf5;
+}
+
+.pin-date-tag {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--blue-primary);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.pin-bubble.warning .pin-date-tag {
+  color: var(--amber-600);
+}
+
+.pin-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy-900);
+}
+
+.pin-benefit {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--blue-used);
+  margin-top: 3px;
+}
+
+.pin-bubble.warning .pin-benefit {
+  color: var(--amber-600);
+}
+
+.pin-youpay {
+  display: block;
+  font-size: 11.5px;
+  color: var(--navy-500);
+  margin-top: 2px;
+}
+
+.pin-flag-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.pin-pole {
+  width: 2px;
+  height: 24px;
+  background: var(--blue-primary);
+  margin-top: 6px;
+}
+
+.pin-bubble.warning + .pin-pole {
+  background: var(--amber-500);
+}
+
+.pin-anchor-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--blue-primary);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px var(--blue-primary);
+  position: absolute;
+  bottom: -6px;
+}
+
+.pin-bubble.warning ~ .pin-anchor-dot {
+  background: var(--amber-500);
+  box-shadow: 0 0 0 2px var(--amber-500);
+}
+
+/* Plan Reset Zone */
+.zone-reset {
+  flex: 1.4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  border-bottom: 3px dashed var(--red-500);
+  padding-bottom: 14px;
+}
+
+.reset-card {
+  background: var(--red-soft);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.reset-icon {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.reset-card strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--red-text);
+  letter-spacing: 0.03em;
+}
+
+.reset-card span {
+  display: block;
+  font-size: 11px;
+  color: #b91c1c;
+  margin-top: 1px;
+}
+
+.reset-renew {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green-text);
+  margin-top: 4px;
+}
+
+.reset-pole {
+  width: 2px;
+  height: 24px;
+  background: var(--red-500);
+  margin-top: 6px;
+}
+
+/* ================= SECTION 3: STRATEGIC INSIGHT ================= */
+.insight-card {
+  background: #ffffff;
+  border: 1px solid var(--amber-border);
+  border-left: 4px solid var(--amber-500);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.insight-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--amber-text);
+  background: var(--amber-soft);
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.insight-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy-900);
+}
+
+.insight-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--navy-700);
+}
+
+.insight-text p {
+  margin-bottom: 6px;
+}
+
+.insight-text p:last-child {
+  margin-bottom: 0;
+}
+
+.disclaimer-text {
+  font-size: 12px;
+  color: var(--navy-400);
+  font-style: italic;
+  padding-top: 8px;
+  border-top: 1px solid var(--navy-100);
+}
+
+/* ================= SECTION 4: ACTION ROW ================= */
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.action-info h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy-900);
+}
+
+.action-info p {
+  font-size: 13px;
+  color: var(--navy-400);
+}
+
+.action-btns {
+  display: flex;
+  gap: 12px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .summary-card:last-child {
+    grid-column: span 2;
+  }
+  .action-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .action-btns {
+    width: 100%;
+  }
+  .action-btns .btn {
+    width: 100%;
+  }
+}
