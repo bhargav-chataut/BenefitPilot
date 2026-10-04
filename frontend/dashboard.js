@@ -59,9 +59,11 @@ function render(d) {
     () => {
       const usedLength = (snapshot.used / d.annualMax) * C;
       $("arc").style.strokeDasharray = `${usedLength} ${C}`;
-      $("projectedArc").style.strokeDasharray =
-        `${(snapshot.projected / d.annualMax) * C} ${C}`;
-      $("projectedArc").style.strokeDashoffset = -usedLength;
+      const projectedArc = $("projectedArc");
+      projectedArc.style.strokeDasharray = snapshot.hasPlan
+        ? `${(snapshot.projected / d.annualMax) * C} ${C}`
+        : `0 ${C}`;
+      projectedArc.style.strokeDashoffset = snapshot.hasPlan ? -usedLength : 0;
     },
   );
 

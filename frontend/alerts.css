@@ -490,10 +490,11 @@ h1 {
 }
 .ring .projected-arc {
   stroke: #f3a32f;
-  stroke-linecap: round;
+  stroke-linecap: butt;
   stroke-dasharray: 0 553;
   transition: stroke-dasharray 1s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
+.ring .projected-arc[hidden] { display: none; }
 .ring-c {
   position: absolute;
   inset: 0;

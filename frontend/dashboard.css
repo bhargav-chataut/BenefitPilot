@@ -337,10 +337,11 @@ h1 {
 }
 .donut .projected-arc {
   stroke: #f3a32f;
-  stroke-linecap: round;
+  stroke-linecap: butt;
   stroke-dasharray: 0 553;
   transition: stroke-dasharray 1s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
+.donut .projected-arc[hidden] { display: none; }
 .stats .orange { color: #d88712; }
 .donut-c {
   position: absolute;
