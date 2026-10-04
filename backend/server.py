@@ -9,6 +9,7 @@ import hmac
 import json
 import os
 import re
+import sqlite3
 import subprocess
 import urllib.error
 import urllib.request
@@ -261,64 +262,151 @@ def _money(value: float) -> int:
     return int(round(value))
 
 
-def build_response(text: str) -> dict:
+def load_employee(email: str | None) -> dict:
+    database = sqlite3.connect(":memory:")
+    try:
+        for filename in ("plans.sql", "employees.sql", "benefit_usage.sql"):
+            database.executescript(
+                (ROOT / "MOCKDATA_BASE" / filename).read_text(encoding="utf-8")
+            )
+        selected_email = email or "alex.carter@usm-demo.com"
+        row = database.execute(
+            """
+            SELECT e.first_name || ' ' || e.last_name, e.email,
+                   p.provider, p.annual_maximum, p.deductible,
+                   p.preventive_coverage, p.basic_coverage,
+                   p.major_coverage, p.orthodontic_coverage,
+                   b.annual_benefit_used, b.deductible_used
+            FROM employees e
+            JOIN plans p ON p.plan_id = e.plan_id
+            JOIN benefit_usage b ON b.employee_id = e.employee_id
+            WHERE lower(e.email) = lower(?)
+            """,
+            (selected_email,),
+        ).fetchone()
+        if not row:
+            raise ValueError("No employee record found for this account.")
+        keys = (
+            "name",
+            "email",
+            "provider",
+            "annual_maximum",
+            "deductible",
+            "preventive_rate",
+            "basic_rate",
+            "major_rate",
+            "orthodontic_rate",
+            "benefit_used",
+            "deductible_used",
+        )
+        employee = dict(zip(keys, row))
+        employee["remaining_maximum"] = max(
+            0, employee["annual_maximum"] - employee["benefit_used"]
+        )
+        employee["remaining_deductible"] = max(
+            0, employee["deductible"] - employee["deductible_used"]
+        )
+        return employee
+    finally:
+        database.close()
+
+
+def calculate_schedule(procedures: list[dict], schedule: list[int], employee: dict) -> dict:
+    months = ["Oct", "Nov", "Dec", "Jan"]
+    rates = {
+        "preventive": employee["preventive_rate"] / 100,
+        "basic": employee["basic_rate"] / 100,
+        "major": employee["major_rate"] / 100,
+        "orthodontic": employee["orthodontic_rate"] / 100,
+    }
+    current_remaining = float(employee["remaining_maximum"])
+    deductible_remaining = float(employee["remaining_deductible"])
+    plan_pays = 0.0
+    next_year_used = 0.0
+    for procedure, month_index in sorted(
+        zip(procedures, schedule), key=lambda item: item[1]
+    ):
+        rate = rates.get(procedure["category"], rates["basic"])
+        eligible = procedure["cost"] * rate
+        if procedure["category"] != "preventive":
+            deductible_applied = min(deductible_remaining, procedure["cost"])
+            deductible_remaining -= deductible_applied
+            eligible = max(0, (procedure["cost"] - deductible_applied) * rate)
+        if month_index >= 3:
+            next_year_used += eligible
+        else:
+            covered = min(current_remaining, eligible)
+            current_remaining -= covered
+            plan_pays += covered
+    total = sum(procedure["cost"] for procedure in procedures)
+    return {
+        "totalCost": _money(total),
+        "planPays": _money(plan_pays),
+        "youPay": _money(total - plan_pays),
+        "benefitUsed": _money(plan_pays),
+        "benefitRemaining": _money(current_remaining),
+        "nextYearUsed": _money(next_year_used),
+        "months": months,
+    }
+
+
+def build_response(text: str, email: str | None = None) -> dict:
     procedures = extract_with_fallback(text)
     if not procedures:
         raise ValueError(
             "No procedures with costs were found. Include a procedure name and price."
         )
 
-    total = sum(p["cost"] for p in procedures)
+    employee = load_employee(email)
     provider = _field(text, "Provider") or "Your dental provider"
     visit_date = _field(text, "Visit Date") or date.today().strftime("%b %-d, %Y")
-    dentist = provider
-    if provider.lower().startswith("dr."):
-        dentist = provider
-
     months = ["Oct", "Nov", "Dec", "Jan"]
-    rates = {"preventive": 1.0, "basic": 0.8, "major": 0.5}
-    plan_pays = sum(p["cost"] * rates[p["category"]] for p in procedures)
-    plan_pays = min(plan_pays, 1500)
+    budget_schedule = [0] * len(procedures)
+    for month_index, procedure_index in enumerate(
+        sorted(range(len(procedures)), key=lambda i: procedures[i]["cost"], reverse=True)
+    ):
+        budget_schedule[procedure_index] = min(month_index, len(months) - 1)
+    schedules = {
+        "budget": budget_schedule,
+        "balanced": [min(index, len(months) - 1) for index in range(len(procedures))],
+        "premium": [0] * len(procedures),
+    }
     options = []
-    for option_id, multiplier, description in (
+    for option_id, description in (
         (
             "budget",
-            0.95,
             "Maximize your benefits and minimize your out-of-pocket costs.",
         ),
-        ("balanced", 1.0, "Balance your costs and use benefits efficiently."),
-        ("premium", 1.08, "Get treatment sooner with minimal out-of-pocket costs."),
+        ("balanced", "Balance your costs and use benefits efficiently."),
+        ("premium", "Get treatment sooner with minimal out-of-pocket costs."),
     ):
-        option_plan_pays = min(total, plan_pays * multiplier)
-        you_pay = max(0, total - option_plan_pays)
-        schedule = [min(index, len(months) - 1) for index in range(len(procedures))]
-        scenario = {
-            "totalCost": _money(total),
-            "planPays": _money(option_plan_pays),
-            "youPay": _money(you_pay),
-            "benefitUsed": _money(option_plan_pays),
-            "benefitRemaining": _money(max(0, 1500 - option_plan_pays)),
-            "nextYearUsed": 0,
-        }
+        schedule = schedules[option_id]
+        scenario = calculate_schedule(procedures, schedule, employee)
         options.append(
             {
                 "id": option_id,
                 "name": option_id.title(),
                 "description": description,
                 "recommended": option_id == "budget",
-                "youPay": _money(you_pay),
-                "planPays": _money(option_plan_pays),
-                "benefitRemaining": _money(max(0, 1500 - option_plan_pays)),
+                "youPay": scenario["youPay"],
+                "planPays": scenario["planPays"],
+                "benefitRemaining": scenario["benefitRemaining"],
                 "range": "Oct 2026 – Jan 2027",
                 "schedule": schedule,
                 "scenario": {"in": scenario, "out": scenario.copy()},
+                "score": scenario["youPay"] + sum(schedule) * 10,
             }
         )
+
+    recommended_id = min(options, key=lambda option: option["score"])["id"]
+    for option in options:
+        option["recommended"] = option["id"] == recommended_id
+        option.pop("score")
 
     return {
         "provider": provider,
         "date": visit_date,
-        "dentist": dentist,
+        "dentist": provider,
         "months": months,
         "procedures": procedures,
         "settings": {
@@ -418,7 +506,13 @@ class Handler(BaseHTTPRequestHandler):
                 text = pdf_to_text(form["file"].file.read())
             if not text.strip():
                 raise ValueError("Provide a PDF or treatment text to analyze.")
-            self._json(200, build_extraction(text) if endpoint == "/api/extract" else build_response(text))
+            email = form.getfirst("employeeEmail", "") or None
+            self._json(
+                200,
+                build_extraction(text)
+                if endpoint == "/api/extract"
+                else build_response(text, email),
+            )
         except (ValueError, OSError, subprocess.SubprocessError) as error:
             self._json(422, {"error": str(error)})
 

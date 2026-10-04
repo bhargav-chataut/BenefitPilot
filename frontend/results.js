@@ -234,6 +234,8 @@ async function extract({ file, text, continueToAnalyze = false }) {
     const body = new FormData();
     if (file) body.append("file", file);
     if (text) body.append("text", text);
+    const email = window.localStorage.getItem("benefitPilot.employeeEmail");
+    if (email) body.append("employeeEmail", email);
 
     try {
       const res = await fetch(CONFIG.EXTRACT_URL, { method: "POST", body });
@@ -310,6 +312,8 @@ async function analyzeSource() {
     const body = new FormData();
     if (state.source.file) body.append("file", state.source.file);
     if (state.source.text) body.append("text", state.source.text);
+    const email = window.localStorage.getItem("benefitPilot.employeeEmail");
+    if (email) body.append("employeeEmail", email);
     const res = await fetch(CONFIG.API_URL, { method: "POST", body });
     if (!res.ok) throw new Error("The treatment plan could not be analyzed.");
     render(await res.json());
