@@ -1006,3 +1006,10 @@ select {
 .add-plan-actions button { background:#245fc0; color:white; padding:12px 22px; border:0; border-radius:10px; font:inherit; cursor:pointer; }
 .add-plan-actions button:disabled { opacity:.6; cursor:wait; }
 .add-plan-actions a { color:#245fc0; }
+.optimizer-explanation {
+  max-width: 760px;
+  margin: 14px 0 28px;
+  color: #56647b;
+  font-size: 14px;
+  line-height: 1.5;
+}

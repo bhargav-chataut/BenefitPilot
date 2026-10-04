@@ -127,7 +127,8 @@ def optimize_response(payload: dict) -> dict:
         raise ValueError("At least one procedure is required.")
     employee = load_employee(payload.get("employeeEmail"))
     settings = normalize_settings(payload.get("settings"))
-    options = add_ai_explanations(build_options(procedures, employee, settings))
+    options = build_options(procedures, employee, settings)
+    explanation = add_ai_explanation(options)
     return {
         "provider": payload.get("provider", "Your dental provider"),
         "providerDetails": payload.get("providerDetails"),
@@ -139,6 +140,7 @@ def optimize_response(payload: dict) -> dict:
         "insurance": insurance_info(employee),
         "settings": settings,
         "options": options,
+        "explanation": explanation,
     }
 
 
@@ -292,10 +294,10 @@ TEXT:
         return None
 
 
-def groq_explain_options(options: list[dict]) -> dict[str, str]:
+def groq_explain_options(options: list[dict]) -> str:
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        return {}
+        return ""
     computed = [
         {
             "id": option["id"],
@@ -309,11 +311,12 @@ def groq_explain_options(options: list[dict]) -> dict[str, str]:
         }
         for option in options
     ]
-    prompt = """Write one short, user-friendly explanation for each deterministic
-dental treatment strategy below. Explain the tradeoff between cost, timing, and
-benefit usage. Use only the supplied numbers. Do not recalculate, correct, or
-invent any number. Return only JSON in this shape:
-{"explanations":{"budget":"...","balanced":"...","premium":"..."}}
+    prompt = """Write one short, user-friendly explanation of the three
+deterministic dental treatment strategies below. Use exactly two short
+sentences: one sentence comparing the strategies and one sentence stating the
+main recommendation. Use only the supplied numbers. Do not recalculate,
+correct, or invent any number. Return only JSON in this shape:
+{"explanation":"Two short sentences."}
 
 COMPUTED STRATEGIES:
 """ + json.dumps(computed, separators=(",", ":"))
@@ -346,16 +349,8 @@ COMPUTED STRATEGIES:
         with urllib.request.urlopen(request, timeout=20) as response:
             payload = json.loads(response.read().decode("utf-8"))
         content = payload["choices"][0]["message"]["content"]
-        explanations = json.loads(content).get("explanations")
-        if not isinstance(explanations, dict):
-            return {}
-        return {
-            option_id: explanation.strip()
-            for option_id, explanation in explanations.items()
-            if option_id in {"budget", "balanced", "premium"}
-            and isinstance(explanation, str)
-            and explanation.strip()
-        }
+        explanation = json.loads(content).get("explanation")
+        return explanation.strip() if isinstance(explanation, str) else ""
     except (
         KeyError,
         TypeError,
@@ -364,14 +359,19 @@ COMPUTED STRATEGIES:
         urllib.error.URLError,
         TimeoutError,
     ):
-        return {}
+        return ""
 
 
-def add_ai_explanations(options: list[dict]) -> list[dict]:
-    explanations = groq_explain_options(options)
-    for option in options:
-        option["aiExplanation"] = explanations.get(option["id"], option["reasoning"])
-    return options
+def add_ai_explanation(options: list[dict]) -> str:
+    explanation = groq_explain_options(options)
+    if explanation:
+        return explanation
+    recommended = next(option for option in options if option["recommended"])
+    return (
+        f"Budget minimizes out-of-pocket cost, Balanced weighs cost and timing, "
+        f"and Fastest finishes care sooner. {recommended['name']} is recommended "
+        f"for this treatment plan."
+    )
 
 
 def extract_with_fallback(text: str) -> list[dict]:
@@ -833,7 +833,8 @@ def build_response(text: str, email: str | None = None) -> dict:
     visit_date = _field(text, "Visit Date") or date.today().strftime("%b %-d, %Y")
     months = ["Oct", "Nov", "Dec", "Jan"]
     settings = normalize_settings(None)
-    options = add_ai_explanations(build_options(procedures, employee, settings))
+    options = build_options(procedures, employee, settings)
+    explanation = add_ai_explanation(options)
 
     return {
         "provider": provider,
@@ -857,6 +858,7 @@ def build_response(text: str, email: str | None = None) -> dict:
         "insurance": insurance_info(employee),
         "settings": settings,
         "options": options,
+        "explanation": explanation,
     }
 
 
