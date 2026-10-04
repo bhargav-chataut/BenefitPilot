@@ -369,11 +369,12 @@ COMPUTED STRATEGIES:
         with urllib.request.urlopen(request, timeout=20) as response:
             payload = json.loads(response.read().decode("utf-8"))
         content = payload["choices"][0]["message"]["content"]
-        explanation = json.loads(content).get("explanation")
+        result = json.loads(content)
+        explanation = result.get("explanation")
         if not isinstance(explanation, str) or not explanation.strip():
             print("Groq recommendation returned no usable explanation.", file=sys.stderr)
             return None, ""
-        recommendation_id = json.loads(content).get("recommendationId")
+        recommendation_id = result.get("recommendationId")
         valid_ids = {option["id"] for option in options}
         if recommendation_id not in valid_ids:
             print(
