@@ -20,8 +20,6 @@ const ICONS = {
 };
 const svg = (name, cls = "") =>
   `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.info}</svg>`;
-const mailto = (email) =>
-  `<a href="mailto:${encodeURIComponent(email)}">${esc(email)}</a>`;
 
 /* ================= LOAD ================= */
 async function load() {

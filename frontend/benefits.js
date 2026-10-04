@@ -59,15 +59,38 @@
     if (!benefits) return {lastUpdated: 'Unavailable', alerts: [], snapshot: null, dates: [], past: []};
     const snapshot = projection();
     const low = benefits.annualMax > 0 && snapshot.remaining / benefits.annualMax < 0.2;
+    const active = snapshot.plan;
+    const target = Number(String(active?.settings?.budget || '').replace(/[$,]/g, ''));
+    const peak = active?.scenario?.peakMonthlyPayment;
+    const nextYearCount = active?.schedule.filter(month => month === 3).length || 0;
+    const planAlerts = [];
+    const addAlert = (id, type, title, body) => planAlerts.push({
+      id: `${id}-${benefits.year}-${active?.savedAt || 'plan'}`, read: false,
+      status: 'active', type, icon: 'info', title, body,
+      pill: 'Review care plan', href: 'results.html', createdAt: active?.savedAt,
+    });
+    if (nextYearCount > 0 && snapshot.nextYearProjected > 0) {
+      addAlert('next-year', 'info', 'Your selected schedule uses next-year benefits',
+        `${nextYearCount} planned ${nextYearCount === 1 ? 'procedure is' : 'procedures are'} scheduled in the next benefit year, with ${money(snapshot.nextYearProjected)} in estimated plan contributions. This assumes the same plan renews.`);
+    }
+    if (active?.network === 'out') {
+      addAlert('network', 'warning', 'Your selected coverage estimate is out of network',
+        'Your estimated member responsibility may be higher than with an in-network provider. Confirm your provider’s network status before scheduling.');
+    }
+    if (target > 0 && Number.isFinite(peak) && peak > target) {
+      addAlert('monthly-target', 'warning', 'Your monthly cost target may be exceeded',
+        `The current schedule has an estimated peak monthly responsibility of ${money(peak)}, above your ${money(target)} target.`);
+    }
     const unusedReminder = !low && benefits.annualMax > 0 && snapshot.remaining > 0 ? [{
       id: `unused-${benefits.year}`,
       read: true,
       status: 'active',
       type: 'success',
       icon: 'calendar',
-      title: 'You still have unused dental benefits that may expire at the end of the year.',
-      body: 'Use your remaining benefits before they reset.',
-      email: benefits.email,
+      title: snapshot.hasPlan
+        ? `${money(snapshot.remaining)} in benefits would remain after planned care`
+        : `${money(snapshot.remaining)} in dental benefits remains this plan year`,
+      body: 'You have unused coverage available before your benefit year resets.',
       pill: 'View benefits',
       href: 'dashboard.html',
       createdAt: `${benefits.year}-12-01T00:00:00Z`,
@@ -79,12 +102,12 @@
         ...(low ? [{id: `remaining-${benefits.year}-${snapshot.remaining}`, read: false, status: 'active',
         type: 'warning', icon: 'clock',
         title: snapshot.hasPlan
-          ? 'Taking your currently added plan will reduce your remaining dental benefit below 20%.'
-          : 'Your remaining dental benefit is below 20%.',
-        body: `${Math.round(snapshot.remaining / benefits.annualMax * 100)}% of your ${money(benefits.annualMax)} annual maximum will remain.`,
-        email: benefits.email,
+          ? `${money(snapshot.remaining)} in benefits would remain after planned care`
+          : `${money(snapshot.remaining)} in dental benefits remains this plan year`,
+        body: `Less than 20% of your ${money(benefits.annualMax)} annual plan benefit ${snapshot.hasPlan ? 'would remain after your selected care plan' : 'is available before your benefit year resets'}.`,
         pill: 'View benefits', href: 'dashboard.html', createdAt: `${benefits.year}-10-01T00:00:00Z`}] : []),
         ...unusedReminder,
+        ...planAlerts,
       ],
       dates: [{label: 'Next benefit reset', date: `Jan 1, ${benefits.year + 1}`, color: 'blue'},
         ...(snapshot.plan ? [{label: 'Added plan completes', date: `${['Oct', 'Nov', 'Dec', 'Jan'][Math.max(...snapshot.plan.schedule)]} ${Math.max(...snapshot.plan.schedule) === 3 ? benefits.year + 1 : benefits.year}`, color: 'blue'}] : [])],

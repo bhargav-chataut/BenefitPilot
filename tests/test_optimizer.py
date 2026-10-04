@@ -106,8 +106,8 @@ class OptimizerTests(unittest.TestCase):
         options = build_options([self.procedure(canDelay=False)], self.employee, normalize_settings(None))
         self.assertEqual(next(o["id"] for o in options if o["recommended"]), "premium")
         self.assertEqual(len({o["youPay"] for o in options}), 1)
-        self.assertEqual(options[1]["description"], "Same schedule also satisfies your monthly budget.")
-        self.assertIn("earliest feasible", options[2]["description"])
+        self.assertIn("matches another strategy and meets your monthly cost target", options[1]["description"])
+        self.assertEqual(options[2]["headline"], "Earliest feasible completion")
 
     def test_reasoning_contains_plan_facts_for_every_option(self):
         employee = dict(self.employee, remaining_deductible=50)

@@ -709,6 +709,7 @@ def project_response(payload: dict) -> dict:
         "email": employee["email"], "enrolled_plan": employee["enrolled_plan"],
         "year": 2026, "provider": payload.get("provider", "Your dental provider"),
         "procedures": procedures, "schedule": schedule, "network": network,
+        "settings": settings,
         "scenario": calculate_schedule(procedures, schedule, employee, network),
         "insurance": insurance_info(employee),
     }
@@ -1038,9 +1039,14 @@ def build_options(procedures: list[dict], employee: dict, settings: dict) -> lis
     recommended, recommendation_reason = recommend_option(selected, employee, settings)
     budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
     descriptions = {
-        "budget": "Lowest cost strategy.",
-        "balanced": "Prioritize monthly affordability, then total patient cost.",
-        "premium": "Finish treatment as soon as the procedure constraints allow.",
+        "budget": "Uses available benefit years strategically to reduce your total estimated out-of-pocket cost.",
+        "balanced": "Spreads estimated member costs while keeping treatment within your preferred completion window.",
+        "premium": "Schedules eligible treatment as soon as possible, with cost used only as a secondary consideration.",
+    }
+    headlines = {
+        "budget": "Lowest estimated member cost",
+        "balanced": "Best balance of affordability and timing",
+        "premium": "Earliest feasible completion",
     }
     options = []
     for name, (schedule, scenario) in selected.items():
@@ -1048,14 +1054,14 @@ def build_options(procedures: list[dict], employee: dict, settings: dict) -> lis
         label = lambda month: f"{MONTHS[month]} {2027 if month == 3 else 2026}"
         description = descriptions[name]
         if name == "balanced" and scenario["peakMonthlyPayment"] > budget:
-            description = "No schedule fits your monthly budget; this minimizes your largest monthly payment."
+            description = "No schedule fits your monthly cost target; this strategy minimizes your estimated peak monthly responsibility within your completion window."
         same = ["Fastest" if other == "premium" else other.title()
                 for other, (other_schedule, _) in selected.items()
                 if other != name and schedule == other_schedule]
         if same and name == "balanced" and scenario["peakMonthlyPayment"] <= budget:
-            description = "Same schedule also satisfies your monthly budget."
+            description += " This schedule also matches another strategy and meets your monthly cost target."
         elif same and name == "premium":
-            description = "Same schedule is also the earliest feasible option."
+            description += " This schedule also matches another strategy."
         reasoning = option_reasoning(name, procedures, schedule, scenario, employee, settings,
                                      label(finish), description, selected["premium"])
         if name == recommended:
@@ -1063,7 +1069,7 @@ def build_options(procedures: list[dict], employee: dict, settings: dict) -> lis
         options.append({
             "reasoning": reasoning,
             "id": name, "name": "Fastest" if name == "premium" else name.title(),
-            "description": description, "recommended": name == recommended,
+            "headline": headlines[name], "description": description, "recommended": name == recommended,
             "youPay": scenario["youPay"], "planPays": scenario["planPays"],
             "benefitRemaining": scenario["benefitRemaining"],
             "range": label(start) if start == finish else f"{label(start)} – {label(finish)}",

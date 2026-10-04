@@ -363,7 +363,8 @@ function renderScenario() {
   renderBenefitWarning(s);
   const recommended = state.data.options.find(option => option.recommended);
   $("optimizerExplanation").textContent = window.BenefitPlanCopy.explain(
-    recommended, state.data.options.find(option => option.id === "premium"), state.net
+    recommended, state.data.options.find(option => option.id === "premium"), state.net,
+    state.data.options.find(option => option.id === "budget")
   );
 }
 

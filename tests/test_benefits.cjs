@@ -59,3 +59,29 @@ test('old projection is ignored if actual benefits change', async()=>{
   const updated = await setup({...baseline, used:400, remaining:1100}, storage);
   assert.equal(updated.api.dashboard().projected, 0);
 });
+
+test('alerts describe actual remaining benefits without claiming email delivery', async()=>{
+  const {api} = await setup({...baseline, remaining:520});
+  const alert = api.alertsData().alerts[0];
+  assert.equal(alert.title, '$520 in dental benefits remains this plan year');
+  assert.equal(alert.email, undefined);
+});
+test('plan alerts are gated by computed next-year use, network and monthly target', async()=>{
+  const saved = {...plan, network:'out', settings:{budget:'$500'},
+    scenario:{...plan.scenario, peakMonthlyPayment:720}};
+  const {api} = await setup(baseline, new Map(), saved);
+  assert.equal(api.alertsData().alerts.length, 1);
+  await api.savePlan({});
+  const alerts = api.alertsData().alerts;
+  assert.ok(alerts.some(a=>a.title === 'Your selected schedule uses next-year benefits' && a.body.includes('$500')));
+  assert.ok(alerts.some(a=>a.title === 'Your selected coverage estimate is out of network'));
+  assert.ok(alerts.some(a=>a.body.includes('$720, above your $500 target')));
+  assert.ok(alerts.every(a=>!a.body.includes('save')));
+});
+test('no monthly alert at target, no network alert in network, no unfunded next-year claim', async()=>{
+  const saved = {...plan, network:'in', settings:{budget:'$500'},
+    scenario:{...plan.scenario, peakMonthlyPayment:500, nextYearUsed:0}};
+  const {api} = await setup(baseline, new Map(), saved);
+  await api.savePlan({});
+  assert.equal(api.alertsData().alerts.length, 1);
+});
