@@ -44,7 +44,7 @@ function render(d) {
   // Annual maximum card
   $("yearLabel").textContent = d.planYear.year;
   $("planYear").textContent =
-    `Plan year: ${d.planYear.start} – ${d.planYear.end}`;
+    `Your dental plan · ${d.enrolled_plan}`;
   $("max").textContent = money(d.annualMax);
   $("used").textContent = money(d.used);
   const snapshot = window.BenefitData.projection();

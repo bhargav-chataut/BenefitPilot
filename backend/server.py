@@ -139,6 +139,7 @@ def optimize_response(payload: dict) -> dict:
         "procedures": procedures,
         "pricing": payload.get("pricing"),
         "insurance": insurance_info(employee),
+        "enrolled_plan": employee["enrolled_plan"],
         "settings": settings,
         "options": options,
         "explanation": explanation,
@@ -573,7 +574,7 @@ def load_employee(email: str | None) -> dict:
         row = database.execute(
             """
             SELECT e.first_name || ' ' || e.last_name, e.email,
-                   p.provider, p.plan_name, p.plan_type,
+                   e.enrolled_plan, p.provider, p.plan_name, p.plan_type,
                    p.annual_maximum, p.deductible,
                    p.preventive_coverage, p.basic_coverage,
                    p.major_coverage, p.orthodontic_coverage,
@@ -591,6 +592,7 @@ def load_employee(email: str | None) -> dict:
         keys = (
             "name",
             "email",
+            "enrolled_plan",
             "provider",
             "plan_name",
             "plan_type",
@@ -620,6 +622,7 @@ def load_employee(email: str | None) -> dict:
 def insurance_info(employee: dict) -> dict:
     return {
         "provider": employee["provider"], "planName": employee["plan_name"],
+        "enrolledPlan": employee["enrolled_plan"],
         "planType": employee["plan_type"], "annualMaximum": employee["annual_maximum"],
         "remainingAnnualMaximum": employee["remaining_maximum"],
         "annualBenefitUsed": employee["benefit_used"],
@@ -643,7 +646,8 @@ def benefits_response(email: str | None) -> dict:
         ).fetchall()
     history = dict(rows)
     return {
-        "email": employee["email"], "name": employee["name"], "year": 2026,
+        "email": employee["email"], "name": employee["name"],
+        "enrolled_plan": employee["enrolled_plan"], "year": 2026,
         "annualMax": employee["annual_maximum"], "used": employee["benefit_used"],
         "remaining": employee["remaining_maximum"], "insurance": insurance_info(employee),
         "months": [{"month": month, "amount": history.get(index, 0)}
@@ -668,7 +672,8 @@ def project_response(payload: dict) -> dict:
     if network not in ("in", "out"):
         raise ValueError("Choose an available network scenario.")
     return {
-        "email": employee["email"], "year": 2026, "provider": payload.get("provider", "Your dental provider"),
+        "email": employee["email"], "enrolled_plan": employee["enrolled_plan"],
+        "year": 2026, "provider": payload.get("provider", "Your dental provider"),
         "procedures": procedures, "schedule": schedule, "network": network,
         "scenario": calculate_schedule(procedures, schedule, employee, network),
         "insurance": insurance_info(employee),
@@ -946,6 +951,7 @@ def build_response(text: str, email: str | None = None) -> dict:
             ],
         },
         "insurance": insurance_info(employee),
+        "enrolled_plan": employee["enrolled_plan"],
         "settings": settings,
         "options": options,
         "explanation": explanation,
