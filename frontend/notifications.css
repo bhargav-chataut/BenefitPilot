@@ -1,0 +1,27 @@
+.notification-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 18px; min-height: 56px; margin-bottom: 18px; position: relative; z-index: 25; }
+.notification-toolbar .user { position: relative; top: auto; right: auto; }
+.notifications { position: relative; }
+.notification-toggle { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #dbe2ee; background: #fff; color: #253453; border-radius: 12px; font: inherit; cursor: pointer; }
+.notification-toggle svg { width: 21px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.notification-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 21px; height: 21px; padding: 0 5px; border-radius: 12px; background: #c92b3c; color: white; font-size: 12px; font-weight: 700; }
+.nav .notification-badge { margin-left: auto; }
+.notification-badge[hidden], .notification-popup[hidden] { display: none; }
+.notification-popup { position: absolute; top: calc(100% + 10px); right: 0; width: min(370px, calc(100vw - 40px)); background: white; border: 1px solid #dbe2ee; border-radius: 14px; box-shadow: 0 12px 36px #15264726; overflow: hidden; }
+.notification-popup h2 { font-size: 17px; padding: 16px; margin: 0; }
+#notification-items { max-height: 350px; overflow-y: auto; }
+.notification-item { display: block; padding: 14px 16px; text-decoration: none; color: #243659; background: #f3f7ff; border-top: 1px solid #e0e7f2; }
+.notification-item strong { display: block; font-size: 14px; line-height: 1.4; }
+.notification-item span { display: block; font-size: 13px; line-height: 1.4; color: #56647b; margin-top: 5px; }
+.notification-item:hover { background: #e8f0ff; }
+.notification-view-all { display: block; padding: 14px 16px; font-weight: 600; color: #245fc0; text-decoration: none; border-top: 1px solid #e0e7f2; }
+.notification-empty { padding: 16px; color: #56647b; }
+.notification-toggle:focus-visible, .notification-popup a:focus-visible, .al:focus-visible { outline: 3px solid #3579de; outline-offset: 2px; }
+.al.is-unread { border-left: 4px solid #346cce; box-shadow: 0 3px 12px #23447b12; }
+.al.is-read { opacity: 0.78; box-shadow: none; }
+.al.is-read h3 { font-weight: 500; }
+.al.is-read:hover, .al.is-read:focus-visible { opacity: 1; }
+.alert-read-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
+@media (max-width: 700px) {
+  .notification-toolbar { flex-wrap: wrap; gap: 8px; }
+  .notification-popup { position: fixed; top: 90px; left: 20px; right: 20px; width: auto; }
+}

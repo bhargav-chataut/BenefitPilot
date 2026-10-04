@@ -10,6 +10,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="dashboard.css" />
+    <link rel="stylesheet" href="notifications.css" />
   </head>
   <body>
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
@@ -42,7 +43,7 @@
             <path
               d="M6 17.500V11a6 6 0 0 1 12 0v6.500l1.500 1.500h-15L6 17.500zM10 21h4"
             /></svg
-          >Alerts</a
+          >Alerts<span class="notification-badge" data-unread-count hidden>0</span></a
         >
       </nav>
     </aside>
@@ -180,6 +181,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
     <script src="employee.js"></script>
+    <script src="notifications.js"></script>
     <script src="dashboard.js"></script>
   </body>
 </html>

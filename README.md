@@ -127,3 +127,19 @@ The service start command is defined by the `Dockerfile`, and Render supplies
 the production `PORT` environment variable automatically.
 
 #nishan thapa
+
+## Shared notifications
+
+`frontend/notifications.js` supplies the same feed, unread count, and latest-unread
+popup to Dashboard, Treatments, and Alerts. It requests `/api/alerts` and uses the
+existing demo alerts when the endpoint is unavailable. Each alert has a stable
+`id`, a boolean `read`, a `status` (`active`, `expired`, or `resolved`), and optionally
+`createdAt` and `expiresAt` timestamps. Only expired/resolved alerts appear in Past
+Alerts; reading an alert never archives or removes it.
+
+Read IDs and cleared past-alert IDs are saved per employee email in localStorage.
+Opening a card or popup link updates badges before navigation, and storage events
+synchronize other tabs. The popup shows the five newest unread active alerts.
+This is browser-local hackathon state, not server-side persistence.
+
+Run notification checks with `node tests/test_notifications.cjs`.

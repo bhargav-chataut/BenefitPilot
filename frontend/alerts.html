@@ -10,6 +10,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="alerts.css" />
+    <link rel="stylesheet" href="notifications.css" />
   </head>
   <body>
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
@@ -42,7 +43,7 @@
             <path
               d="M12 2.500a6.500 6.500 0 0 0-6.500 6.500v4.500L3.500 16.500a1 1 0 0 0 .8 1.500h15.400a1 1 0 0 0 .8-1.500l-2-3V9A6.500 6.500 0 0 0 12 2.500zM9.500 19.500a2.500 2.500 0 0 0 5 0z"
             /></svg
-          >Alerts<span class="badge" id="navBadge" hidden>0</span></a
+          >Alerts<span class="notification-badge" data-unread-count hidden>0</span></a
         >
       </nav>
     </aside>
@@ -147,6 +148,7 @@
     </main>
 
     <script src="employee.js"></script>
+    <script src="notifications.js"></script>
     <script src="alerts.js"></script>
   </body>
 </html>

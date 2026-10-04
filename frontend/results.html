@@ -10,6 +10,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="results.css" />
+    <link rel="stylesheet" href="notifications.css" />
   </head>
   <body class="intake-mode">
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
@@ -49,7 +50,7 @@
             <path
               d="M6 17.5V11a6 6 0 0 1 12 0v6.5l1.5 1.5h-15L6 17.5zM10 21h4"
             /></svg
-          >Alerts</a
+          >Alerts<span class="notification-badge" data-unread-count hidden>0</span></a
         >
       </nav>
     </aside>
@@ -247,6 +248,7 @@
     </main>
 
     <script src="employee.js"></script>
+    <script src="notifications.js"></script>
     <script src="results.js"></script>
   </body>
 </html>
