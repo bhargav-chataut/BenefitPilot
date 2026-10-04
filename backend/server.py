@@ -10,6 +10,8 @@ import json
 import os
 import re
 import subprocess
+import urllib.error
+import urllib.request
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -23,6 +25,22 @@ EMPLOYEES_SQL = ROOT / "MOCKDATA_BASE" / "employees.sql"
 EMPLOYEE_RE = re.compile(
     r"\('([^']+)','[^']*','[^']*','([^']+)','([^']+)'",
 )
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+
+def load_dotenv() -> None:
+    env_file = ROOT / ".env"
+    if not env_file.is_file():
+        return
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        os.environ.setdefault(name.strip(), value.strip().strip("\"'"))
+
+
+load_dotenv()
 
 CODE_RE = re.compile(r"\b(D\d{4})\b", re.IGNORECASE)
 MONEY_RE = re.compile(r"\$\s*([\d,]+(?:\.\d{1,2})?)")
@@ -100,6 +118,86 @@ def extract_procedures(text: str) -> list[dict]:
     return procedures
 
 
+def groq_extract(text: str) -> list[dict] | None:
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return None
+    model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+    prompt = """Extract dental procedures from the text below.
+Return only valid JSON with this shape:
+{"procedures":[{"name":"string","code":"D#### or N/A","category":"preventive|basic|major|orthodontic","cost":0}]}
+Use the CDT code when present. Infer category from the procedure and code.
+Use a numeric cost in dollars. Do not invent procedures or costs.
+
+TEXT:
+""" + text
+    request = urllib.request.Request(
+        GROQ_URL,
+        data=json.dumps(
+            {
+                "model": model,
+                "temperature": 0,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You extract structured dental treatment data.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+            }
+        ).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        content = payload["choices"][0]["message"]["content"]
+        procedures = json.loads(content).get("procedures")
+        if not isinstance(procedures, list) or not procedures:
+            return None
+        normalized = []
+        for procedure in procedures:
+            name = str(procedure.get("name", "")).strip()
+            if not name:
+                continue
+            code = str(procedure.get("code", "N/A")).upper()
+            cost = float(procedure.get("cost", 0))
+            if cost < 0:
+                continue
+            category = str(
+                procedure.get("category", _category(code, name))
+            ).lower()
+            if category not in {"preventive", "basic", "major", "orthodontic"}:
+                category = _category(code, name)
+            normalized.append(
+                {
+                    "name": name,
+                    "code": code if CODE_RE.fullmatch(code) else "N/A",
+                    "category": category,
+                    "cost": round(cost, 2),
+                }
+            )
+        return normalized or None
+    except (
+        KeyError,
+        TypeError,
+        ValueError,
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        TimeoutError,
+    ):
+        return None
+
+
+def extract_with_fallback(text: str) -> list[dict]:
+    return groq_extract(text) or extract_procedures(text)
+
+
 def _field(text: str, label: str) -> str:
     labels = (
         "Patient",
@@ -125,7 +223,7 @@ def _money(value: float) -> int:
 
 
 def build_response(text: str) -> dict:
-    procedures = extract_procedures(text)
+    procedures = extract_with_fallback(text)
     if not procedures:
         raise ValueError(
             "No procedures with costs were found. Include a procedure name and price."
@@ -196,7 +294,7 @@ def build_response(text: str) -> dict:
 
 def build_extraction(text: str) -> dict:
     """Return only the document text and normalized treatment data."""
-    procedures = extract_procedures(text)
+    procedures = extract_with_fallback(text)
     if not procedures:
         raise ValueError(
             "No procedures with costs were found. Include a procedure name and price."

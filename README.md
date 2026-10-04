@@ -48,6 +48,10 @@ same extraction and adds the existing demo optimization response consumed by
 the Treatments page.
 Login uses the local `/api/login` endpoint and no longer depends on loading
 SQLite or an external CDN in the browser.
+If `GROQ_API_KEY` is configured, extraction uses the Groq model in
+`GROQ_MODEL` (default `llama-3.1-8b-instant`) and falls back to the local
+parser if Groq is unavailable. Keep `.env` local and add both variables to
+Render under **Environment**; never commit the key.
 
 ## Deploy to Render
 

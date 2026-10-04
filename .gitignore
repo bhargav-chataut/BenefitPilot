@@ -2,3 +2,6 @@ UserFlow.md
 PLAN.md
 tech.md
 __pycache__/
+.env
+.env.*
+!.env.example
