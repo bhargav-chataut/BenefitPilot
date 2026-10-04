@@ -241,6 +241,7 @@ TEXT:
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "User-Agent": "BenefitPilot/1.0",
         },
         method="POST",
     )
@@ -359,6 +360,7 @@ COMPUTED STRATEGIES:
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "User-Agent": "BenefitPilot/1.0",
         },
         method="POST",
     )
