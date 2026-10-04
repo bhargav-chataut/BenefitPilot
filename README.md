@@ -2,7 +2,7 @@
 
 ## Live demo
 
-**Try BenefitPilot now:** [codelinc.onrender.com/frontend/index.html](https://codelinc.onrender.com/frontend/index.html)
+**Try BenefitPilot now:** [benefitpilot.onrender.com](https://benefitpilot.onrender.com)
 
 > A deployed employee benefits platform for understanding dental coverage,
 > comparing treatment strategies, and making confident care decisions.
@@ -217,7 +217,7 @@ node --check frontend/benefits.js
 The application is deployed and available at:
 
 ```text
-https://codelinc.onrender.com/frontend/index.html
+[[benefitpilot.onrender.com](https://benefitpilot.onrender.com)](https://benefitpilot.onrender.com)
 ```
 
 The repository also includes `Dockerfile`, `Procfile`, and `render.yaml` for
