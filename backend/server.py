@@ -320,22 +320,42 @@ def groq_recommend_options(options: list[dict]) -> tuple[str | None, str]:
         {
             "id": option["id"],
             "name": option["name"],
-            "schedule": option["schedule"],
-            "youPay": option["youPay"],
+            "totalOutOfPocket": option["youPay"],
+            "highestMonthlyPayment": option["peakMonthlyPayment"],
+            "completionMonth": option["completionMonth"],
+            "totalDelayMonths": max(option["schedule"]),
+            "usesNextBenefitYear": option["scenario"]["in"]["nextYearUsed"] > 0,
+            "nextYearBenefitUsed": option["scenario"]["in"]["nextYearUsed"],
+            "remainingCurrentYearBenefit": option["benefitRemaining"],
+            "monthlyBudget": option["monthlyBudget"],
+            "withinMonthlyBudget": option["peakMonthlyPayment"] <= option["monthlyBudget"],
             "planPays": option["planPays"],
-            "benefitUsed": option["scenario"]["in"]["benefitUsed"],
-            "benefitRemaining": option["scenario"]["in"]["benefitRemaining"],
-            "nextYearUsed": option["scenario"]["in"]["nextYearUsed"],
         }
         for option in options
     ]
+    by_id = {item["id"]: item for item in computed}
+    for item in computed:
+        item["differenceVsFastest"] = round(
+            item["totalOutOfPocket"] - by_id["premium"]["totalOutOfPocket"], 2
+        )
+        item["differenceVsBudget"] = round(
+            item["totalOutOfPocket"] - by_id["budget"]["totalOutOfPocket"], 2
+        )
     prompt = """Choose the best recommendation from the three computed dental
-treatment strategies below, then explain that choice for the user. You may
-only choose one of the supplied strategy IDs. Use exactly three short
-sentences: compare the strategies, explain the recommended strategy, and state
-the main tradeoff. Use only the supplied numbers. Do not recalculate, correct,
-or invent any number. Return only JSON in this shape:
-{"recommendationId":"budget|balanced|premium","explanation":"Three short sentences."}
+treatment strategies below, then explain why it beats the alternatives for
+this user. You may only choose one supplied strategy ID. Compare the options
+in this exact order: total estimated out-of-pocket cost; highest estimated
+monthly payment; completion month and total delay; whether the schedule uses
+the next benefit year; remaining current-year benefit; whether it stays within
+the monthly budget; and cost difference versus Fastest and Budget.
+Write exactly 2 or 3 concise sentences. Mention exact dollar or timing
+differences when meaningful. If two options cost the same, explain the timing
+or monthly-payment difference. Say directly when Budget is cheaper because
+treatment moves into the next benefit year, when Fastest has no financial
+penalty, or how Balanced improves affordability or timing. Do not make medical
+claims or suggest delaying care for clinical reasons. Use only supplied values;
+do not recalculate, correct, or invent numbers. Return only JSON:
+{"recommendationId":"budget|balanced|premium","explanation":"2-3 concise sentences."}
 
 COMPUTED STRATEGIES:
 """ + json.dumps(computed, separators=(",", ":"))
@@ -418,11 +438,28 @@ def add_ai_recommendation(options: list[dict]) -> tuple[list[dict], str]:
         recommended = deterministic
     if explanation:
         return options, explanation
+    by_id = {option["id"]: option for option in options}
+    budget = by_id["budget"]
+    fastest = by_id["premium"]
+    balanced = by_id["balanced"]
+    cost_difference = recommended["youPay"] - fastest["youPay"]
+    budget_difference = recommended["youPay"] - budget["youPay"]
+    next_year = recommended["scenario"]["in"]["nextYearUsed"] > 0
+    next_year_text = (
+        f"uses {_money(recommended['scenario']['in']['nextYearUsed']):,} of next-year benefits"
+        if next_year
+        else "uses no next-year benefits"
+    )
     return options, (
-        f"Budget minimizes out-of-pocket cost, Balanced weighs cost and timing, "
-        f"and Fastest finishes care sooner. {recommended['name']} is recommended "
-        f"based on the computed cost and timing tradeoff. The main tradeoff is "
-        f"what you pay versus how quickly treatment is completed."
+        f"{recommended['name']} is recommended at ${recommended['youPay']:,.0f} out of pocket "
+        f"(Budget ${budget['youPay']:,.0f}, Balanced ${balanced['youPay']:,.0f}, "
+        f"Fastest ${fastest['youPay']:,.0f}); its highest monthly payment is "
+        f"${recommended['peakMonthlyPayment']:,.0f}, versus a ${recommended['monthlyBudget']:,.0f} budget, "
+        f"so it is {'within' if recommended['peakMonthlyPayment'] <= recommended['monthlyBudget'] else 'above'} budget. "
+        f"It finishes in {recommended['completionMonth']}, {next_year_text}, leaves "
+        f"${recommended['benefitRemaining']:,.0f} of current-year benefit, and costs "
+        f"${abs(cost_difference):,.0f} {'more' if cost_difference > 0 else 'less' if cost_difference < 0 else 'the same as'} Fastest "
+        f"and ${abs(budget_difference):,.0f} {'more' if budget_difference > 0 else 'less' if budget_difference < 0 else 'the same as'} Budget."
     )
 
 
@@ -866,6 +903,7 @@ def build_options(procedures: list[dict], employee: dict, settings: dict) -> lis
             "benefitRemaining": scenario["benefitRemaining"],
             "range": label(start) if start == finish else f"{label(start)} – {label(finish)}",
             "completionMonth": label(finish), "peakMonthlyPayment": scenario["peakMonthlyPayment"],
+            "monthlyBudget": budget,
             "sameScheduleAs": same, "schedule": schedule,
             "scenario": {"in": scenario, "out": calculate_schedule(procedures, schedule, employee, "out")},
         })
