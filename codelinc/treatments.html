@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BenefitPilot – Treatments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="intake-mode">
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="tooth" viewBox="0 0 24 24">
+        <path
+          d="M7.2 3C4.9 3 3.2 4.7 3.2 7.2c0 2.2 1 3.6 1.5 5.5.6 2.3.8 6.3 2.4 6.3 1.4 0 1.2-3.4 2-4.8.4-.6.9-.9 1.5-.9h.8c.6 0 1.1.3 1.5.9.8 1.4.6 4.8 2 4.8 1.6 0 1.8-4 2.4-6.3.5-1.9 1.5-3.3 1.5-5.5C20.8 4.7 19.1 3 16.8 3c-1.7 0-2.8.7-4.8.7S8.9 3 7.2 3z"
+        />
+      </symbol>
+      <symbol id="cal" viewBox="0 0 24 24">
+        <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+        <path d="M3.5 10h17M8 3v4M16 3v4" />
+      </symbol>
+      <symbol id="chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
+      <symbol id="chev-u" viewBox="0 0 24 24">
+        <path d="m6 15 6-6 6 6" />
+      </symbol>
+    </svg>
+
+    <aside class="sidebar">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><use href="#tooth" /></svg>
+        <span>Benefit<b>Pilot</b></span>
+      </div>
+      <nav class="nav">
+        <a href="#"
+          ><svg class="ic">
+            <path
+              d="M4 11 12 4l8 7v8.5a1 1 0 0 1-1 1h-4.5V15h-5v5.5H5a1 1 0 0 1-1-1V11z"
+            /></svg
+          >Dashboard</a
+        >
+        <a href="#" class="active"
+          ><svg class="ic fill"><use href="#tooth" /></svg>Treatments</a
+        >
+        <a href="#"
+          ><svg class="ic">
+            <path
+              d="M6 17.5V11a6 6 0 0 1 12 0v6.5l1.5 1.5h-15L6 17.5zM10 21h4"
+            /></svg
+          >Alerts</a
+        >
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div class="user">
+        <div class="avatar"></div>
+        Bhargav Chataut<svg class="ic chev"><use href="#chev-d" /></svg>
+      </div>
+
+      <h1>Treatments</h1>
+      <p class="sub">
+        Upload your dentist treatment plan, compare your options, and choose the
+        strategy that fits your benefits.
+      </p>
+
+      <!-- ============ INTAKE (visible first) ============ -->
+      <section class="intake" id="intake">
+        <div class="up card dropzone" id="dropzone">
+          <div class="box">
+            <svg class="ic">
+              <path
+                d="M12 16V5M7.5 9.5 12 5l4.5 4.5M4.5 14v4.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V14"
+              />
+            </svg>
+          </div>
+          <h3>Upload dentist PDF</h3>
+          <p>Upload a treatment plan, estimate, or EOB.</p>
+          <p class="hint" id="fileName">
+            or drag and drop it here &bull; PDF up to 10 MB
+          </p>
+          <input
+            type="file"
+            id="fileInput"
+            accept="application/pdf,.pdf"
+            hidden
+          />
+          <button class="btn" id="chooseBtn" type="button">Choose File</button>
+        </div>
+
+        <div class="up card manual">
+          <div class="box">
+            <svg class="ic">
+              <path
+                d="M14 3H7.5A1.5 1.5 0 0 0 6 4.5v15A1.5 1.5 0 0 0 7.5 21h9a1.5 1.5 0 0 0 1.5-1.5V7l-4-4zM14 3v4h4M9 12h6M9 15.5h6M9 8.5h2"
+              />
+            </svg>
+          </div>
+          <h3>Type what your dentist said</h3>
+          <p>Enter procedures and estimated costs manually.</p>
+          <textarea
+            id="manualText"
+            rows="4"
+            placeholder="e.g. Crown (D2740) – $1,400&#10;Filling on tooth #14 (D2391) – $250&#10;Filling on tooth #19 (D2391) – $225"
+          ></textarea>
+          <button class="btn primary" id="manualBtn" type="button">
+            Enter Manually
+          </button>
+        </div>
+      </section>
+      <p class="form-error" id="formError" role="alert" hidden></p>
+
+      <!-- ============ LOADING ============ -->
+      <section class="loading card" id="loading" hidden aria-live="polite">
+        <div class="spinner"></div>
+        <div class="load-text">
+          <strong id="loadTitle">Reading your treatment plan…</strong>
+          <span>This usually takes a few seconds.</span>
+          <div class="bar"><i></i></div>
+        </div>
+      </section>
+
+      <!-- ============ HOW IT WORKS (hidden after results) ============ -->
+      <section class="how" id="how">
+        <div>
+          <span class="num">1</span><strong>Share your plan</strong>
+          <p>Upload the PDF or type in what your dentist recommended.</p>
+        </div>
+        <div>
+          <span class="num">2</span><strong>We crunch your benefits</strong>
+          <p>We match each procedure against your annual coverage.</p>
+        </div>
+        <div>
+          <span class="num">3</span><strong>Pick your strategy</strong>
+          <p>Compare budget, balanced, and premium schedules.</p>
+        </div>
+      </section>
+
+      <!-- ============ RESULTS (revealed after AI returns) ============ -->
+      <div id="results" hidden>
+        <h2>Your Care Options</h2>
+        <section class="options" id="options"></section>
+
+        <section class="plan card">
+          <div class="plan-head">
+            <svg class="bld" viewBox="0 0 24 28" fill="currentColor">
+              <path
+                d="M4 2h16a1 1 0 0 1 1 1v23h-6v-5h-6v5H3V3a1 1 0 0 1 1-1zm6.5 3v2.5H8V10h2.5v2.5H13V10h2.5V7.5H13V5h-2.5z"
+                fill-rule="evenodd"
+              />
+            </svg>
+            <strong id="provider"></strong><span class="sep"></span>
+            <span class="it"
+              ><svg class="ic"><use href="#cal" /></svg
+              ><span id="pdate"></span></span
+            ><span class="sep"></span>
+            <span class="it"
+              ><svg class="ic">
+                <circle cx="12" cy="8" r="3.8" />
+                <path d="M4.5 20c.5-4 3.5-6 7.5-6s7 2 7.5 6" /></svg
+              ><span id="dentist"></span></span
+            ><span class="sep"></span>
+            <span class="pill" id="pcount"></span>
+            <svg class="ic chev"><use href="#chev-u" /></svg>
+          </div>
+
+          <div class="plan-body">
+            <div class="col">
+              <h5>Treatment plan summary</h5>
+              <ul class="tl" id="procList"></ul>
+            </div>
+
+            <div class="col">
+              <h5>Customize &amp; Schedule</h5>
+              <div class="months" id="months"></div>
+              <div id="schedRows"></div>
+              <div class="form">
+                <div>
+                  <label for="fBudget">Monthly budget</label
+                  ><select id="fBudget">
+                    <option>$250</option>
+                    <option>$500</option>
+                    <option>$750</option>
+                    <option>$1,000</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="fPriority">Priority</label
+                  ><select id="fPriority">
+                    <option>Lowest cost</option>
+                    <option>Fastest</option>
+                    <option>Balanced</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="fProvider">Provider preference</label
+                  ><select id="fProvider">
+                    <option>In-network preferred</option>
+                    <option>In-network only</option>
+                    <option>Any provider</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="fLatest">Latest acceptable month</label
+                  ><select id="fLatest"></select>
+                </div>
+              </div>
+              <button
+                class="btn primary optimize"
+                id="optimizeBtn"
+                type="button"
+              >
+                <span class="btn-spin"></span
+                ><span id="optimizeLabel">Optimize my plan</span>
+              </button>
+            </div>
+
+            <div class="col">
+              <h5>Current Scenario</h5>
+              <div class="seg">
+                <button class="on" data-net="in" type="button">
+                  In-network</button
+                ><button data-net="out" type="button">Out-of-network</button>
+              </div>
+              <div class="rows" id="scenRows"></div>
+              <div class="note">
+                <i>i</i>Updates automatically as you adjust your plan.
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
