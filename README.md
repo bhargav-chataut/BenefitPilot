@@ -67,6 +67,15 @@ the care options. NPPES is queried only when the treatment text contains a
 10-digit NPI; if it is unavailable, the treatment-plan provider text remains
 the source of truth.
 
+The optimizer generates every assignment of procedures to the available
+planning months, calculates each assignment against the employee's plan, and
+selects:
+
+- **Budget**: the assignment with the lowest employee cost.
+- **Balanced**: the lowest-cost assignment that also follows the natural
+  procedure sequence across months when possible.
+- **Fastest**: the assignment that completes all procedures earliest.
+
 ## Deploy to Render
 
 This repository includes a Docker deployment configuration. Docker installs

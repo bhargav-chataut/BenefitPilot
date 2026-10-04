@@ -6,6 +6,7 @@ import cgi
 import argparse
 import errno
 import hmac
+import itertools
 import json
 import os
 import re
@@ -522,6 +523,59 @@ def calculate_schedule(
     }
 
 
+def generate_possible_schedules(
+    procedure_count: int, month_count: int = 4
+) -> list[list[int]]:
+    if procedure_count <= 0:
+        return []
+    # Four planning months keep the search bounded while covering every
+    # assignment for the treatment-plan UI.
+    return [list(schedule) for schedule in itertools.product(range(month_count), repeat=procedure_count)]
+
+
+def find_budget_schedule(
+    procedures: list[dict], employee: dict, schedules: list[list[int]]
+) -> tuple[list[int], dict]:
+    candidates = [
+        (schedule, calculate_schedule(procedures, schedule, employee, "in"))
+        for schedule in schedules
+    ]
+    return min(
+        candidates,
+        key=lambda item: (item[1]["youPay"], sum(item[0]), max(item[0])),
+    )
+
+
+def find_balanced_schedule(
+    procedures: list[dict], employee: dict, schedules: list[list[int]]
+) -> tuple[list[int], dict]:
+    candidates = [
+        (schedule, calculate_schedule(procedures, schedule, employee, "in"))
+        for schedule in schedules
+    ]
+    return min(
+        candidates,
+        key=lambda item: (
+            item[1]["youPay"],
+            sum(abs(item[0][index] - index) for index in range(len(item[0]))),
+            sum(item[0]),
+        ),
+    )
+
+
+def find_fastest_schedule(
+    procedures: list[dict], employee: dict, schedules: list[list[int]]
+) -> tuple[list[int], dict]:
+    candidates = [
+        (schedule, calculate_schedule(procedures, schedule, employee, "in"))
+        for schedule in schedules
+    ]
+    return min(
+        candidates,
+        key=lambda item: (max(item[0]), sum(item[0]), item[1]["youPay"]),
+    )
+
+
 def build_response(text: str, email: str | None = None) -> dict:
     procedures = extract_with_fallback(text)
     if not procedures:
@@ -534,15 +588,11 @@ def build_response(text: str, email: str | None = None) -> dict:
     provider_details = lookup_nppes(text, provider)
     visit_date = _field(text, "Visit Date") or date.today().strftime("%b %-d, %Y")
     months = ["Oct", "Nov", "Dec", "Jan"]
-    budget_schedule = [0] * len(procedures)
-    for month_index, procedure_index in enumerate(
-        sorted(range(len(procedures)), key=lambda i: procedures[i]["cost"], reverse=True)
-    ):
-        budget_schedule[procedure_index] = min(month_index, len(months) - 1)
-    schedules = {
-        "budget": budget_schedule,
-        "balanced": [min(index, len(months) - 1) for index in range(len(procedures))],
-        "premium": [0] * len(procedures),
+    schedules = generate_possible_schedules(len(procedures), len(months))
+    selected_schedules = {
+        "budget": find_budget_schedule(procedures, employee, schedules),
+        "balanced": find_balanced_schedule(procedures, employee, schedules),
+        "premium": find_fastest_schedule(procedures, employee, schedules),
     }
     options = []
     for option_id, description in (
@@ -553,13 +603,12 @@ def build_response(text: str, email: str | None = None) -> dict:
         ("balanced", "Balance your costs and use benefits efficiently."),
         ("premium", "Get treatment sooner with minimal out-of-pocket costs."),
     ):
-        schedule = schedules[option_id]
-        scenario = calculate_schedule(procedures, schedule, employee, "in")
+        schedule, scenario = selected_schedules[option_id]
         out_scenario = calculate_schedule(procedures, schedule, employee, "out")
         options.append(
             {
                 "id": option_id,
-                "name": option_id.title(),
+                "name": "Fastest" if option_id == "premium" else option_id.title(),
                 "description": description,
                 "recommended": option_id == "budget",
                 "youPay": scenario["youPay"],
@@ -568,14 +617,12 @@ def build_response(text: str, email: str | None = None) -> dict:
                 "range": "Oct 2026 – Jan 2027",
                 "schedule": schedule,
                 "scenario": {"in": scenario, "out": out_scenario},
-                "score": scenario["youPay"] + sum(schedule) * 10,
             }
         )
 
-    recommended_id = min(options, key=lambda option: option["score"])["id"]
+    recommended_id = "balanced"
     for option in options:
         option["recommended"] = option["id"] == recommended_id
-        option.pop("score")
 
     return {
         "provider": provider,
