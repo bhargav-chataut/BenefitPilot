@@ -36,7 +36,7 @@ window.addEventListener('pageshow', load);
 /* ================= RENDER ================= */
 function render(d) {
   if (d.user) {
-    $("userName").textContent = d.user.name;
+    window.BenefitEmployee?.setName(d.user.name);
     const email = window.localStorage.getItem("benefitPilot.employeeEmail");
     if (email) window.localStorage.setItem("benefitPilot.employeeProfile", JSON.stringify({ email, name: d.user.name }));
   }

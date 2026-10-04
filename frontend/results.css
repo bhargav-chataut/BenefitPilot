@@ -194,22 +194,13 @@ svg {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 38%, #e0b08c 0 26%, transparent 27%),
-    linear-gradient(#2a2420, #52463c);
-  border: 1px solid #ddd;
-  position: relative;
-  overflow: hidden;
-}
-.avatar::after {
-  content: "";
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: -14px;
-  height: 22px;
-  border-radius: 50%;
-  background: #3c3a46;
+  display: grid;
+  place-items: center;
+  background: var(--blue-soft);
+  border: 1px solid #cfe0f8;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 700;
 }
 .user .chev {
   width: 16px;
