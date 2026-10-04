@@ -64,7 +64,9 @@ VALUES
 ('EMP019','Benjamin','Wright','ben@magnolia-demo.com','password123','Magnolia Manufacturing','PLAN_INO',1,700,0,0),
 ('EMP020','Harper','Scott','harper@magnolia-demo.com','password123','Magnolia Manufacturing','PLAN_PLUS',1,550,1,250),
 
-('EMP021','Bhargav','Chataut','bhargavchataut101@gmail.com','password123','Codelinc','PLAN_PLUS',1,500,1,300);
+('EMP021','Bhargav','Chataut','bhargavchataut101@gmail.com','password123','Codelinc','PLAN_PLUS',1,500,1,300),
+('EMP022','Kris','Chataut','krischataut@gmail.com','password123','Codelinc','PLAN_PLUS',1,500,1,300),
+('EMP023','Bhaskar','Chataut','bhaskarchataut@gmail.com','password123','Codelinc','PLAN_PLUS',1,500,1,300);
 
 SELECT *
 FROM employees;

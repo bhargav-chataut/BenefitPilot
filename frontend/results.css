@@ -1007,9 +1007,10 @@ select {
 .add-plan-actions button:disabled { opacity:.6; cursor:wait; }
 .add-plan-actions a { color:#245fc0; }
 .optimizer-explanation {
-  max-width: 760px;
+  width: 100%;
+  max-width: none;
   margin: 14px 0 28px;
   color: #56647b;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 18px;
+  line-height: 1.6;
 }

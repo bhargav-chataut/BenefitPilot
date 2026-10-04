@@ -45,6 +45,16 @@ svg {
   fill: currentColor;
   stroke: none;
 }
+.al p a {
+  color: inherit;
+  text-decoration: underline;
+}
+.alert-email-status {
+  display: block;
+  margin-top: 6px;
+  color: #8b95a8;
+  font-size: 12px;
+}
 
 /* ---------- Sidebar ---------- */
 .sidebar {
