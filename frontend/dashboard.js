@@ -49,6 +49,7 @@ function render(d) {
   $("remaining").textContent = money(snapshot.hasPlan ? snapshot.remaining : d.remaining);
   $("projectedDonut").textContent = money(snapshot.projected);
   $("projectedStat").hidden = !snapshot.hasPlan;
+  $("projectedArc").hidden = !snapshot.hasPlan;
   $("remainingLabel").textContent = snapshot.hasPlan ? "Projected remaining" : "Remaining";
   const pct = Math.round((usedAmount / d.annualMax) * 100);
   $("pct").textContent = snapshot.hasPlan ? money(snapshot.remaining) : pct + "%";

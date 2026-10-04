@@ -62,6 +62,8 @@ function render(d) {
   $("sUsed").textContent = money(snapshot.used);
   $("sUsedLbl").textContent = `Used (${s.year})`;
   $("sProjected").textContent = money(snapshot.projected);
+  $("projectedSnapshot").hidden = !snapshot.hasPlan;
+  $("projectedArc").hidden = !snapshot.hasPlan;
   $("sRem").textContent = money(snapshot.hasPlan ? snapshot.remaining : s.remaining);
   $("sRemLbl").textContent = snapshot.hasPlan ? "Projected remaining" : "Remaining";
   const C = 2 * Math.PI * 88;
