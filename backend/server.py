@@ -124,26 +124,22 @@ def optimize_response(payload: dict) -> dict:
     procedures = payload.get("procedures")
     if not isinstance(procedures, list) or not procedures:
         raise ValueError("At least one procedure is required.")
-    schedule = payload.get("schedule")
-    if not isinstance(schedule, list) or len(schedule) != len(procedures):
-        raise ValueError("A month must be selected for every procedure.")
-    schedule = [max(0, min(3, int(month))) for month in schedule]
     employee = load_employee(payload.get("employeeEmail"))
-    selected_id = str(payload.get("optionId", "balanced"))
+    selected_schedules = find_best_options(procedures, employee)
     options = []
     for option in ("budget", "balanced", "premium"):
-        in_scenario = calculate_schedule(procedures, schedule, employee, "in")
+        schedule, in_scenario = selected_schedules[option]
         out_scenario = calculate_schedule(procedures, schedule, employee, "out")
         options.append(
             {
                 "id": option,
-                "name": option.title(),
+                "name": "Fastest" if option == "premium" else option.title(),
                 "description": {
                     "budget": "Maximize your benefits and minimize your out-of-pocket costs.",
                     "balanced": "Balance your costs and use benefits efficiently.",
                     "premium": "Get treatment sooner with minimal out-of-pocket costs.",
                 }[option],
-                "recommended": option == selected_id,
+                "recommended": option == "balanced",
                 "youPay": in_scenario["youPay"],
                 "planPays": in_scenario["planPays"],
                 "benefitRemaining": in_scenario["benefitRemaining"],
@@ -523,14 +519,56 @@ def calculate_schedule(
     }
 
 
-def generate_possible_schedules(
-    procedure_count: int, month_count: int = 4
-) -> list[list[int]]:
-    if procedure_count <= 0:
-        return []
-    # Four planning months keep the search bounded while covering every
-    # assignment for the treatment-plan UI.
-    return [list(schedule) for schedule in itertools.product(range(month_count), repeat=procedure_count)]
+def generate_schedules(procedures: list[dict]) -> list[list[int]]:
+    month_choices = [
+        (0,) if procedure.get("canDelay") is False else (0, 1, 2, 3)
+        for procedure in procedures
+    ]
+    return [
+        list(schedule) for schedule in itertools.product(*month_choices)
+    ]
+
+
+def schedule_delay(schedule: list[int]) -> int:
+    return sum(schedule)
+
+
+def _normalize(value: float, minimum: float, maximum: float) -> float:
+    if maximum == minimum:
+        return 0.0
+    return (value - minimum) / (maximum - minimum)
+
+
+def find_best_options(
+    procedures: list[dict], employee: dict
+) -> dict[str, tuple[list[int], dict]]:
+    schedules = generate_schedules(procedures)
+    candidates = [
+        (
+            schedule,
+            calculate_schedule(procedures, schedule, employee, "in"),
+            schedule_delay(schedule),
+        )
+        for schedule in schedules
+    ]
+    costs = [candidate[1]["youPay"] for candidate in candidates]
+    delays = [candidate[2] for candidate in candidates]
+    budget = min(candidates, key=lambda item: (item[1]["youPay"], item[2]))
+    balanced = min(
+        candidates,
+        key=lambda item: (
+            0.6 * _normalize(item[1]["youPay"], min(costs), max(costs))
+            + 0.4 * _normalize(item[2], min(delays), max(delays)),
+            item[1]["youPay"],
+            item[2],
+        ),
+    )
+    fastest = min(candidates, key=lambda item: (item[2], item[1]["youPay"]))
+    return {
+        "budget": (budget[0], budget[1]),
+        "balanced": (balanced[0], balanced[1]),
+        "premium": (fastest[0], fastest[1]),
+    }
 
 
 def find_budget_schedule(
@@ -553,12 +591,15 @@ def find_balanced_schedule(
         (schedule, calculate_schedule(procedures, schedule, employee, "in"))
         for schedule in schedules
     ]
+    costs = [item[1]["youPay"] for item in candidates]
+    delays = [schedule_delay(item[0]) for item in candidates]
     return min(
         candidates,
         key=lambda item: (
+            0.6 * _normalize(item[1]["youPay"], min(costs), max(costs))
+            + 0.4 * _normalize(schedule_delay(item[0]), min(delays), max(delays)),
             item[1]["youPay"],
-            sum(abs(item[0][index] - index) for index in range(len(item[0]))),
-            sum(item[0]),
+            schedule_delay(item[0]),
         ),
     )
 
@@ -588,12 +629,7 @@ def build_response(text: str, email: str | None = None) -> dict:
     provider_details = lookup_nppes(text, provider)
     visit_date = _field(text, "Visit Date") or date.today().strftime("%b %-d, %Y")
     months = ["Oct", "Nov", "Dec", "Jan"]
-    schedules = generate_possible_schedules(len(procedures), len(months))
-    selected_schedules = {
-        "budget": find_budget_schedule(procedures, employee, schedules),
-        "balanced": find_balanced_schedule(procedures, employee, schedules),
-        "premium": find_fastest_schedule(procedures, employee, schedules),
-    }
+    selected_schedules = find_best_options(procedures, employee)
     options = []
     for option_id, description in (
         (

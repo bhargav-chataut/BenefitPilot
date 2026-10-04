@@ -506,18 +506,7 @@ async function optimize() {
       if (!res.ok) throw new Error("Request failed (" + res.status + ")");
       next = await res.json();
     } catch (err) {
-      if (!CONFIG.USE_MOCK_ON_ERROR) throw err;
-      await wait(2200); // simulate AI processing time
-      next = JSON.parse(JSON.stringify(data)); // demo only: nudge the selected option's numbers
-      const o = next.options.find((x) => x.id === state.selected);
-      o.schedule = schedule;
-      o.youPay = Math.max(0, o.youPay - 25);
-      o.planPays += 25;
-      ["in", "out"].forEach((k) => {
-        o.scenario[k].youPay = Math.max(0, o.scenario[k].youPay - 25);
-        o.scenario[k].planPays += 25;
-      });
-      next.settings = settings;
+      throw err;
     }
     render(next, true);
   } catch (err) {
