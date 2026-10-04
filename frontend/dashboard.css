@@ -642,5 +642,6 @@ h1 {
 .projection-summary span { color:#56647b; font-size:14px; }
 .projection-summary strong { display:block; color:#243659; font-size:21px; margin-top:5px; }
 .projection-summary a { margin-left:auto; color:#245fc0; font-weight:600; }
-.benefit-alert { display:block; margin-top:18px; padding:14px 18px; border-radius:10px; color:#755514; background:#fff4d8; text-decoration:none; }
+.benefit-alert { display:flex; align-items:center; gap:16px; margin-top:18px; padding:14px 18px; border-radius:10px; color:#755514; background:#fff4d8; }
+.benefit-alert a { margin-left:auto; color:#755514; font-weight:600; white-space:nowrap; }
 .benefit-alert[hidden] { display:none; }

@@ -22,10 +22,10 @@ async function setup(data = baseline, storage = new Map(), projection = plan) {
   await window.BenefitData.ready;
   return {api:window.BenefitData, storage, events, listeners};
 }
-test('benefit alert threshold is strictly below 80 percent', async()=>{
-  for (const remaining of [1201,1200,1199]) {
+test('benefit alert threshold is strictly below 20 percent', async()=>{
+  for (const remaining of [301,300,299]) {
     const {api} = await setup({...baseline, remaining});
-    assert.equal(api.alertsData().alerts.length, remaining < 1200 ? 1 : 0);
+    assert.equal(api.alertsData().alerts.filter(alert => alert.type === 'warning').length, remaining < 300 ? 1 : 0);
     assert.equal(api.alertsData().snapshot.remaining, api.dashboard().remaining);
   }
 });

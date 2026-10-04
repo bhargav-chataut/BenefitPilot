@@ -71,7 +71,10 @@
       <p class="sub">Track your dental benefits and upcoming care.</p>
 
       <p id="dashboardStatus" role="status"></p>
-      <a id="benefitAlert" class="benefit-alert" href="alerts.html" hidden></a>
+      <div id="benefitAlert" class="benefit-alert" hidden role="alert">
+        <span id="benefitAlertText"></span>
+        <a href="alerts.html">View benefits</a>
+      </div>
       <div class="projection-summary">
         <span>Projected plan usage <strong id="projected">$0</strong></span>
         <span>Remaining after plan <strong id="projectedRemaining">$0</strong></span>

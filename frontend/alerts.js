@@ -41,7 +41,7 @@ function render(d) {
           (a) => `
     <a class="al ${esc(a.type)} ${a.read ? "is-read" : "is-unread"}" data-alert-id="${esc(a.id)}" href="${esc(window.BenefitNotifications.safeHref(a.href))}">
       <span class="al-ic">${svg(a.icon)}</span>
-      <div><span class="alert-read-label">${a.read ? "Read" : "Unread"}</span><h3>${esc(a.title)}</h3><p>${esc(a.body).replace(/\n/g, "<br>")} Email sent to ${mailto(a.email)}.</p><small class="alert-email-status">Email sent</small></div>
+      <div><span class="alert-read-label">${a.read ? "Read" : "Unread"}</span><h3>${esc(a.title)}</h3><p>${esc(a.body).replace(/\n/g, "<br>")}${a.email ? ` Email sent to ${mailto(a.email)}.` : ""}</p>${a.email ? '<small class="alert-email-status">Email sent</small>' : ""}</div>
       ${a.pill ? `<span class="pill">${esc(a.pill)}</span>` : "<span></span>"}
       <svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
     </a>`,

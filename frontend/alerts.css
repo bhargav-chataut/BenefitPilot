@@ -346,7 +346,7 @@ h1 {
 /* ---------- Alert cards ---------- */
 .al {
   display: grid;
-  grid-template-columns: 60px minmax(0, 1fr) auto 22px;
+  grid-template-columns: 60px minmax(0, 1fr) auto;
   align-items: center;
   gap: 20px;
   padding: 22px 24px;
@@ -392,6 +392,9 @@ h1 {
   color: #4d5873;
   line-height: 1.5;
   margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .al .pill {
   white-space: nowrap;
@@ -399,6 +402,12 @@ h1 {
   font-weight: 500;
   padding: 10px 20px;
   border-radius: 999px;
+}
+.al > div {
+  min-width: 0;
+}
+.al .go {
+  display: none;
 }
 .al .go {
   width: 22px;
@@ -698,15 +707,14 @@ h1 {
     padding: 20px;
   }
   .al {
-    grid-template-columns: 48px minmax(0, 1fr) 22px;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
   }
   .al-ic {
     width: 48px;
     height: 48px;
   }
   .al .pill {
-    grid-column: 2;
-    justify-self: start;
+    grid-column: auto;
   }
   .snap-body {
     flex-direction: column;

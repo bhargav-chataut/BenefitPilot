@@ -146,8 +146,8 @@ the production `PORT` environment variable automatically.
 
 `frontend/notifications.js` supplies the same feed, unread count, and latest-unread
 popup to Dashboard, Treatments, and Alerts. `frontend/benefits.js` supplies the
-shared employee snapshot. Benefit alerts appear only when actual remaining
-benefits are strictly below 80% of the annual maximum; at 80% or above, the
+shared employee snapshot. Benefit alerts appear only when remaining benefits (including an accepted plan
+projection) are strictly below 20% of the annual maximum; at 20% or above, the
 dashboard banner is hidden and no low-benefit notification is generated.
 Unrelated demo alerts and fixed benefit amounts are removed. Each alert has a stable
 `id`, a boolean `read`, a `status` (`active`, `expired`, or `resolved`), and optionally

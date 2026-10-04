@@ -24,8 +24,11 @@ async function load() {
   $("projectedRemaining").textContent = money(data.projectedRemaining);
   $("nextYearProjected").textContent = money(data.nextYearProjected);
   const alert = $("benefitAlert");
-  alert.hidden = !(data.annualMax > 0 && data.remaining / data.annualMax < 0.8);
-  alert.textContent = `${money(data.remaining)} remaining — ${Math.round(data.remaining / data.annualMax * 100)}% of your annual benefits.`;
+  const snapshot = window.BenefitData.projection();
+  const remaining = snapshot.hasPlan ? snapshot.remaining : data.remaining;
+  alert.hidden = !(data.annualMax > 0 && remaining / data.annualMax < 0.2);
+  $("benefitAlertText").textContent =
+    `${Math.round((remaining / data.annualMax) * 100)}% of your ${money(data.annualMax)} annual maximum will remain.`;
 }
 window.addEventListener('benefit-plan-changed', load);
 window.addEventListener('pageshow', load);

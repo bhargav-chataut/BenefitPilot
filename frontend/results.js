@@ -338,6 +338,20 @@ function renderScenario() {
   document
     .querySelectorAll(".seg button")
     .forEach((b) => b.classList.toggle("on", b.dataset.net === state.net));
+  renderBenefitWarning(s);
+}
+
+function renderBenefitWarning(scenario) {
+  const warning = $("benefitWarning");
+  const annualMax = Number(state.data?.insurance?.annualMaximum || 0);
+  const remaining = Number(scenario?.benefitRemaining || 0);
+  const belowThreshold = annualMax > 0 && remaining / annualMax < 0.2;
+  warning.hidden = !belowThreshold;
+  if (!belowThreshold) return;
+  $("benefitWarningTitle").textContent =
+    "Taking your currently added plan will reduce your remaining dental benefit below 20%.";
+  $("benefitWarningBody").textContent =
+    `${Math.round((remaining / annualMax) * 100)}% of your ${money(annualMax)} annual maximum will remain. Email sent to ${window.localStorage.getItem("benefitPilot.employeeEmail") || "your email"}.`;
 }
 
 /* ================= INTERACTIONS ================= */

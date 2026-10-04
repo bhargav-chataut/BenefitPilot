@@ -31,7 +31,9 @@
       hasPlan: Boolean(plan),
       used: benefits.used,
       projected: currentYearPlanPays,
-      remaining: Math.max(0, benefits.annualMax - benefits.used - currentYearPlanPays),
+      remaining: plan
+        ? Math.max(0, benefits.annualMax - benefits.used - currentYearPlanPays)
+        : benefits.remaining,
       nextYearProjected: nextYearPlanPays,
       monthly,
     };
@@ -44,7 +46,7 @@
       return {...month, actual: month.amount, projectedAmount: projected,
         amount: month.amount + projected, projected: projected > 0};
     });
-    return {...benefits, ...snapshot, months,
+    return {...benefits, ...snapshot, remaining: benefits.remaining, months,
       projectedRemaining: snapshot.remaining,
       upcoming: snapshot.plan ? snapshot.plan.procedures.map((procedure, index) => {
         const month = snapshot.plan.schedule[index];
@@ -56,16 +58,33 @@
   function alertsData() {
     if (!benefits) return {lastUpdated: 'Unavailable', alerts: [], snapshot: null, dates: [], past: []};
     const snapshot = projection();
-    const low = benefits.annualMax > 0 && benefits.remaining / benefits.annualMax < 0.8;
+    const low = benefits.annualMax > 0 && snapshot.remaining / benefits.annualMax < 0.2;
+    const unusedReminder = !low && benefits.annualMax > 0 && snapshot.remaining > 0 ? [{
+      id: `unused-${benefits.year}`,
+      read: true,
+      status: 'active',
+      type: 'success',
+      icon: 'calendar',
+      title: 'You still have unused dental benefits that may expire at the end of the year.',
+      body: 'Use your remaining benefits before they reset.',
+      pill: 'View benefits',
+      href: 'dashboard.html',
+      createdAt: `${benefits.year}-12-01T00:00:00Z`,
+    }] : [];
     return {
       lastUpdated: 'Current benefit totals',
       snapshot: {...benefits, ...snapshot, projectedRemaining: snapshot.remaining},
-      alerts: low ? [{id: `remaining-${benefits.year}-${benefits.remaining}`, read: false, status: 'active',
+      alerts: [
+        ...(low ? [{id: `remaining-${benefits.year}-${snapshot.remaining}`, read: false, status: 'active',
         type: 'warning', icon: 'clock',
-        title: `Your remaining dental benefit is below the 80% threshold`,
-        body: `${Math.round(benefits.remaining / benefits.annualMax * 100)}% of your ${money(benefits.annualMax)} annual maximum remains.`,
+        title: snapshot.hasPlan
+          ? 'Taking your currently added plan will reduce your remaining dental benefit below 20%.'
+          : 'Your remaining dental benefit is below 20%.',
+        body: `${Math.round(snapshot.remaining / benefits.annualMax * 100)}% of your ${money(benefits.annualMax)} annual maximum will remain.`,
         email: benefits.email,
-        pill: 'View benefits', href: 'dashboard.html', createdAt: `${benefits.year}-10-01T00:00:00Z`}] : [],
+        pill: 'View benefits', href: 'dashboard.html', createdAt: `${benefits.year}-10-01T00:00:00Z`}] : []),
+        ...unusedReminder,
+      ],
       dates: [{label: 'Next benefit reset', date: `Jan 1, ${benefits.year + 1}`, color: 'blue'},
         ...(snapshot.plan ? [{label: 'Added plan completes', date: `${['Oct', 'Nov', 'Dec', 'Jan'][Math.max(...snapshot.plan.schedule)]} ${Math.max(...snapshot.plan.schedule) === 3 ? benefits.year + 1 : benefits.year}`, color: 'blue'}] : [])],
       past: [],
