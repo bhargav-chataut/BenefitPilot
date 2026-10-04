@@ -77,13 +77,13 @@ select:focus-visible, textarea:focus-visible, .al:focus-visible {
 }
 .ibox .ic, .up .box .ic { width: 24px; height: 24px; }
 .card-head { gap: 12px; }
-.usage, .glance, .upcoming, .snap, .dates { padding: 22px 24px; }
-.usage, .layout, .intake { margin-top: 24px; }
+.usage, .glance, .upcoming, .snap, .dates { padding: 18px 22px; }
+.usage, .layout, .intake { margin-top: 18px; }
 .row2, .layout, .intake, .options, .side { gap: 20px; }
 .row2 { margin-top: 20px; }
-.usage-body { margin-top: 20px; }
-.donut { width: 216px; height: 216px; margin: 0 40px 0 16px; }
-.usage .stats { flex: 1; gap: 16px; padding-left: 32px; }
+.usage-body { margin-top: 12px; }
+.donut { width: 216px; height: 216px; margin: 0 24px 0 8px; }
+.usage .stats { flex: 1; gap: 11px; padding-left: 24px; }
 .usage .stats > div { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; }
 .usage .stats small { font-size: 15px; margin: 0; }
 .usage .stats strong { font-size: 30px; text-align: right; }
@@ -116,8 +116,11 @@ select:focus-visible, textarea:focus-visible, .al:focus-visible {
   border-radius: 4px;
   color: var(--navy);
   background: var(--canvas);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border-color: var(--orange-line);
+  background: var(--orange-soft);
 }
 
 /* Orange primary actions; outlined navy secondary actions. */

@@ -58,6 +58,7 @@
   function alertsData() {
     if (!benefits) return {lastUpdated: 'Unavailable', alerts: [], snapshot: null, dates: [], past: []};
     const snapshot = projection();
+    const emailStatus = `Email sent to ${benefits.email}.`;
     const low = benefits.annualMax > 0 && snapshot.remaining / benefits.annualMax < 0.2;
     const active = snapshot.plan;
     const target = Number(String(active?.settings?.budget || '').replace(/[$,]/g, ''));
@@ -87,11 +88,9 @@
       status: 'active',
       type: 'success',
       icon: 'calendar',
-      title: snapshot.hasPlan
-        ? `${money(snapshot.remaining)} in benefits would remain after planned care`
-        : `${money(snapshot.remaining)} in dental benefits remains this plan year`,
-      body: 'You have unused coverage available before your benefit year resets.',
-      pill: 'View benefits',
+      title: 'You still have unused dental benefits that may expire at the end of the year.',
+      body: `Use your remaining benefits before they reset. ${emailStatus}`,
+      pill: 'View alerts',
       href: 'dashboard.html',
       createdAt: `${benefits.year}-12-01T00:00:00Z`,
     }] : [];
@@ -102,10 +101,10 @@
         ...(low ? [{id: `remaining-${benefits.year}-${snapshot.remaining}`, read: false, status: 'active',
         type: 'warning', icon: 'clock',
         title: snapshot.hasPlan
-          ? `${money(snapshot.remaining)} in benefits would remain after planned care`
-          : `${money(snapshot.remaining)} in dental benefits remains this plan year`,
-        body: `Less than 20% of your ${money(benefits.annualMax)} annual plan benefit ${snapshot.hasPlan ? 'would remain after your selected care plan' : 'is available before your benefit year resets'}.`,
-        pill: 'View benefits', href: 'dashboard.html', createdAt: `${benefits.year}-10-01T00:00:00Z`}] : []),
+          ? 'Taking your currently added plan will reduce your remaining dental benefit below 20%.'
+          : 'Your remaining dental benefit is below 20%.',
+        body: `${Math.round((snapshot.remaining / benefits.annualMax) * 100)}% of your ${money(benefits.annualMax)} annual maximum will remain. ${emailStatus}`,
+        pill: 'View alerts', href: 'alerts.html', createdAt: `${benefits.year}-10-01T00:00:00Z`}] : []),
         ...unusedReminder,
         ...planAlerts,
       ],
