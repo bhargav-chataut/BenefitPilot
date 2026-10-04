@@ -152,14 +152,6 @@ Groq is optional. When configured, it can improve extraction and write
 explanations, but it does not choose schedules or change financial values.
 The deterministic backend remains the source of truth.
 
-## Quick start
-
-### Requirements
-
-- Python 3.12+
-- `pdftotext` for text-based PDF extraction
-- Node.js for the frontend test scripts
-
 ## Demo accounts
 
 The demo seed data uses the shared password `password123`.
@@ -214,24 +206,38 @@ node --check frontend/benefits.js
 
 ## Deployment
 
-The application is deployed and available at:
+BenefitPilot is deployed on Render:
+
+https://benefitpilot.onrender.com
+
+The repository includes `Dockerfile`, `Procfile`, and `render.yaml` for deployment.
+
+Required Render environment variables:
 
 ```text
-https://benefitpilot.onrender.com
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-20b
 ```
 
-The repository also includes `Dockerfile`, `Procfile`, and `render.yaml` for
-repeatable deployment.
-For Render:
+## Run locally
 
-1. Push the repository to GitHub.
-2. Create a Render Blueprint from the repository.
-3. Select the `main` branch.
-4. Let Render use `render.yaml`.
-5. Open the deployed service at `/frontend/index.html`.
+Clone the repository:
 
-The Docker image installs `poppler-utils` for PDF extraction. Render supplies
-the production `PORT` automatically.
+git clone https://github.com/bhargav-chataut/BenefitPilot.git
+cd BenefitPilot
+
+Set environment variables:
+
+export GROQ_API_KEY="your_groq_api_key"
+export GROQ_MODEL="openai/gpt-oss-20b"
+
+Start the app:
+
+python3 backend/server.py
+
+Then open:
+
+http://localhost:8001
 
 ## Project structure
 
@@ -257,7 +263,7 @@ tests/                                    Backend and frontend regression tests
 - **Demo honesty:** simulated alerts and Lincoln-inspired configurations are
   labeled as demo behavior rather than official insurance promises.
 
-## License and demo disclaimer
+## Disclaimer
 
 BenefitPilot is a demonstration project. Employee names, emails, treatment
 reports, plan configurations, provider details, costs, and benefit values are
