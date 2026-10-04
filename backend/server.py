@@ -53,6 +53,8 @@ PROCEDURE_RE = re.compile(
 def _category(code: str, name: str) -> str:
     code = code.upper()
     lowered = name.lower()
+    if "orthodont" in lowered or "braces" in lowered:
+        return "orthodontic"
     if code in {"D0120", "D0140", "D0150", "D0210", "D0274", "D1110"}:
         return "preventive"
     if "crown" in lowered or "bridge" in lowered or "implant" in lowered:
@@ -60,12 +62,30 @@ def _category(code: str, name: str) -> str:
     return "basic"
 
 
+def _clean_manual_name(name: str) -> str:
+    lowered = name.lower()
+    for keyword, canonical in (
+        ("crown", "Crown"),
+        ("filling", "Filling"),
+        ("cavity", "Filling"),
+        ("cleaning", "Cleaning"),
+        ("prophylaxis", "Cleaning"),
+        ("extraction", "Tooth extraction"),
+        ("implant", "Implant"),
+        ("bridge", "Bridge"),
+        ("root canal", "Root canal"),
+    ):
+        if keyword in lowered:
+            return canonical
+    return name
+
+
 def _procedure_from_line(line: str) -> dict | None:
     match = PROCEDURE_RE.match(line)
     if not match:
         return None
     code, raw_name, raw_cost = match.groups()
-    name = re.sub(r"\s+", " ", raw_name).strip(" -:–—")
+    name = _clean_manual_name(re.sub(r"\s+", " ", raw_name).strip(" -:–—"))
     if not name:
         return None
     return {
@@ -103,7 +123,9 @@ def extract_procedures(text: str) -> list[dict]:
         raw_name = line[: money_match.start()]
         if code_match:
             raw_name = raw_name.replace(code_match.group(0), "")
-        name = re.sub(r"\s+", " ", raw_name).strip(" -:,.()–—")
+        name = _clean_manual_name(
+            re.sub(r"\s+", " ", raw_name).strip(" -:,.()–—")
+        )
         if name:
             procedures.append(
                 {
@@ -169,11 +191,7 @@ TEXT:
             cost = float(procedure.get("cost", 0))
             if cost < 0:
                 continue
-            category = str(
-                procedure.get("category", _category(code, name))
-            ).lower()
-            if category not in {"preventive", "basic", "major", "orthodontic"}:
-                category = _category(code, name)
+            category = _category(code, name)
             normalized.append(
                 {
                     "name": name,

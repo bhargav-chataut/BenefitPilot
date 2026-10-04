@@ -367,6 +367,42 @@ textarea:focus-visible {
   color: #c0392b;
   font-weight: 500;
 }
+.extraction-preview {
+  margin-top: 28px;
+  padding: 28px 32px;
+}
+.preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.preview-head h2 {
+  margin: 0;
+}
+.preview-head p,
+.detected-meta {
+  color: var(--gray);
+  margin-top: 6px;
+}
+.detected-list {
+  list-style: none;
+  margin: 22px 0;
+  border-top: 1px solid var(--border);
+}
+.detected-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.detected-list small {
+  color: var(--gray);
+}
+.extraction-preview > .btn.primary {
+  margin-top: 2px;
+}
 
 /* ---------- First screen: fit the viewport, no scrollbar ---------- */
 body.intake-mode {
@@ -397,7 +433,8 @@ body.intake-mode .manual textarea {
 }
 body.intake-mode .loading,
 body.intake-mode .how,
-body.intake-mode .form-error {
+body.intake-mode .form-error,
+body.intake-mode .extraction-preview {
   flex: none;
 }
 body.intake-mode .how {

@@ -1,5 +1,9 @@
 /* ================= CONFIG ================= */
 const CONFIG = {
+  EXTRACT_URL:
+    window.location.protocol === "file:"
+      ? "http://localhost:8001/api/extract"
+      : "/api/extract",
   API_URL:
     window.location.protocol === "file:"
       ? "http://localhost:8001/api/analyze"
@@ -145,7 +149,14 @@ const esc = (s) =>
   );
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const state = { data: null, selected: null, net: "in", file: null };
+const state = {
+  data: null,
+  selected: null,
+  net: "in",
+  file: null,
+  source: null,
+  extraction: null,
+};
 
 /* ================= INPUTS ================= */
 const dropzone = $("dropzone"),
@@ -185,7 +196,7 @@ function handleFile(file) {
   state.file = file;
   $("fileName").textContent = file.name;
   $("fileName").classList.add("ok");
-  analyze({ file });
+  extract({ file });
 }
 
 $("manualBtn").addEventListener("click", () => {
@@ -194,7 +205,7 @@ $("manualBtn").addEventListener("click", () => {
     return showError(
       'Type at least one procedure and its cost, e.g. "Crown (D2740) – $1,400".',
     );
-  analyze({ text });
+  extract({ text });
 });
 
 function showError(msg) {
@@ -210,29 +221,22 @@ const STEPS = [
   "Building your care options…",
 ];
 
-async function analyze({ file, text }) {
+async function extract({ file, text }) {
   showError("");
   setBusy(true);
   $("results").hidden = true;
   $("results").classList.remove("show");
+  $("extractionPreview").hidden = true;
   $("loading").hidden = false;
   $("how").hidden = true;
-
-  let i = 0;
-  $("loadTitle").textContent = STEPS[0];
-  const timer = setInterval(() => {
-    i = (i + 1) % STEPS.length;
-    $("loadTitle").textContent = STEPS[i];
-  }, 1600);
 
   try {
     const body = new FormData();
     if (file) body.append("file", file);
     if (text) body.append("text", text);
 
-    let data;
     try {
-      const res = await fetch(CONFIG.API_URL, { method: "POST", body });
+      const res = await fetch(CONFIG.EXTRACT_URL, { method: "POST", body });
       if (!res.ok) {
         let message = "The treatment plan could not be extracted.";
         try {
@@ -245,19 +249,72 @@ async function analyze({ file, text }) {
         error.apiResponse = true;
         throw error;
       }
-      data = await res.json();
+      state.extraction = await res.json();
+      state.source = { file, text };
     } catch (err) {
       if (!CONFIG.USE_MOCK_ON_ERROR || err.apiResponse) throw err;
-      await wait(3500); // simulate AI processing time
-      data = MOCK;
+      state.extraction = {
+        treatment: {
+          provider: MOCK.provider,
+          visitDate: MOCK.date,
+          procedures: MOCK.procedures,
+        },
+      };
+      state.source = { file, text };
     }
-    render(data);
+    renderExtraction(state.extraction.treatment);
   } catch (err) {
     showError(err.message || "We couldn’t process that plan. Please try again.");
   } finally {
+    $("loading").hidden = true;
+    $("how").hidden = false;
+    setBusy(false);
+  }
+}
+
+function renderExtraction(treatment) {
+  const procedures = treatment.procedures || [];
+  $("detectedMeta").textContent = [
+    treatment.provider,
+    treatment.visitDate,
+  ]
+    .filter(Boolean)
+    .join(" • ");
+  $("detectedList").innerHTML = procedures
+    .map(
+      (p) =>
+        `<li><span>${esc(p.name)} <small>(${esc(p.code)})</small></span><strong>${money(p.cost)}</strong></li>`,
+    )
+    .join("");
+  $("extractionPreview").hidden = false;
+  $("extractionPreview").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function analyzeSource() {
+  showError("");
+  setBusy(true);
+  $("extractionPreview").hidden = true;
+  $("loading").hidden = false;
+  $("how").hidden = true;
+  let i = 0;
+  $("loadTitle").textContent = STEPS[1];
+  const timer = setInterval(() => {
+    i = (i + 1) % STEPS.length;
+    $("loadTitle").textContent = STEPS[i];
+  }, 1600);
+  try {
+    const body = new FormData();
+    if (state.source.file) body.append("file", state.source.file);
+    if (state.source.text) body.append("text", state.source.text);
+    const res = await fetch(CONFIG.API_URL, { method: "POST", body });
+    if (!res.ok) throw new Error("The treatment plan could not be analyzed.");
+    render(await res.json());
+  } catch (err) {
+    showError(err.message || "We couldn’t build your care options. Please try again.");
+    $("extractionPreview").hidden = false;
+  } finally {
     clearInterval(timer);
     $("loading").hidden = true;
-    if ($("results").hidden) $("how").hidden = false;
     setBusy(false);
   }
 }
@@ -266,6 +323,13 @@ function setBusy(on) {
   ["chooseBtn", "manualBtn"].forEach((id) => ($(id).disabled = on));
   $("manualText").disabled = on;
 }
+
+$("confirmExtractionBtn").addEventListener("click", analyzeSource);
+$("editExtractionBtn").addEventListener("click", () => {
+  $("extractionPreview").hidden = true;
+  $("how").hidden = false;
+  $("manualText").focus();
+});
 
 /* ================= RENDER ================= */
 function render(data, keep = false) {
