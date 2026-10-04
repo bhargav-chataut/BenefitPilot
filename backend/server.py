@@ -288,7 +288,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = urlparse(self.path).path
         if path == "/":
-            target = FRONTEND / "index.html"
+            self.send_response(302)
+            self.send_header("Location", "/frontend/index.html")
+            self.end_headers()
+            return
         elif path.startswith("/frontend/"):
             target = FRONTEND / path.removeprefix("/frontend/")
         elif path.startswith("/MOCKDATA_BASE/"):

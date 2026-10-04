@@ -8,7 +8,9 @@ Run from the repository root:
 python3 backend/server.py
 ```
 
-Open `http://localhost:8001/frontend/index.html`. The server uses this fixed
+Open `http://localhost:8001/` or
+`http://localhost:8001/frontend/index.html`. The root URL redirects to the
+frontend page. The server uses this fixed
 port so the browser URL does not change between restarts. To choose a
 different fixed port, run `python3 backend/server.py --port 8010`.
 
