@@ -76,6 +76,9 @@ def _category(code: str, name: str) -> str:
 
 
 def _clean_manual_name(name: str) -> str:
+    name = re.sub(r"\s*\(\s*N/?A\s*\)\s*", " ", name, flags=re.IGNORECASE)
+    name = re.sub(r"\bN/?A\b", "", name, flags=re.IGNORECASE)
+    name = re.sub(r"\s+", " ", name).strip(" -:,.()–—")
     lowered = name.lower()
     for keyword, canonical in (
         ("crown", "Crown"),
@@ -187,7 +190,7 @@ def extract_procedures(text: str) -> list[dict]:
             procedures.append(
                 {
                     "name": name,
-                    "code": code_match.group(1).upper() if code_match else "N/A",
+                    "code": code_match.group(1).upper() if code_match else "",
                     "category": _category(
                         code_match.group(1) if code_match else "", name
                     ),
@@ -267,7 +270,7 @@ TEXT:
             ).strip()
             if not name:
                 continue
-            code = str(procedure.get("code", "N/A")).upper()
+            code = str(procedure.get("code", "")).upper()
             raw_cost = procedure.get("estimated_cost")
             if raw_cost is None:
                 raw_min = procedure.get("cost_min")
@@ -283,7 +286,7 @@ TEXT:
             normalized.append(
                 {
                     "name": name,
-                    "code": code if CODE_RE.fullmatch(code) else "N/A",
+                    "code": code if CODE_RE.fullmatch(code) else "",
                     "category": category,
                     "cost": round(cost, 2),
                     "quantity": quantity,
