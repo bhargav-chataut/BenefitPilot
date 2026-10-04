@@ -581,11 +581,7 @@ def load_employee(email: str | None) -> dict:
         row = database.execute(
             """
             SELECT e.first_name || ' ' || e.last_name, e.email,
-                   e.enrolled_plan, p.provider, p.plan_name, p.plan_type,
-                   p.annual_maximum, p.deductible,
-                   p.preventive_coverage, p.basic_coverage,
-                   p.major_coverage, p.orthodontic_coverage,
-                   p.in_network_supported, p.out_of_network_supported,
+                   e.enrolled_plan, p.provider, p.plan_type,
                    b.annual_benefit_used, b.deductible_used
             FROM employees e
             JOIN plans p ON p.plan_id = e.plan_id
@@ -601,23 +597,27 @@ def load_employee(email: str | None) -> dict:
             "email",
             "enrolled_plan",
             "provider",
-            "plan_name",
             "plan_type",
-            "annual_maximum",
-            "deductible",
-            "preventive_rate",
-            "basic_rate",
-            "major_rate",
-            "orthodontic_rate",
-            "in_network_supported",
-            "out_of_network_supported",
             "benefit_used",
             "deductible_used",
         )
         employee = dict(zip(keys, row))
-        employee["remaining_maximum"] = max(
-            0, employee["annual_maximum"] - employee["benefit_used"]
+        plan = dental_plan(employee)
+        employee.update(
+            plan_name=plan["name"],
+            annual_maximum=plan["annualMaximum"],
+            deductible=plan["deductible"],
+            preventive_rate=plan.get("preventiveCoverage", 0) * 100,
+            basic_rate=plan.get("basicCoverage", 0) * 100,
+            major_rate=plan.get("majorCoverage", 0) * 100,
+            orthodontic_rate=plan.get("orthodontiaCoverage", 0) * 100,
+            in_network_supported=plan["inNetworkAllowed"],
+            out_of_network_supported=plan["outOfNetworkAllowed"],
         )
+        employee["remaining_maximum"] = max(
+            0,
+            employee["annual_maximum"] - employee["benefit_used"]
+        ) if employee["annual_maximum"] is not None else None
         employee["remaining_deductible"] = max(
             0, employee["deductible"] - employee["deductible_used"]
         )
@@ -711,10 +711,11 @@ def project_response(payload: dict) -> dict:
 MONTHS = ["Oct", "Nov", "Dec", "Jan"]
 
 # Lincoln-inspired demo configurations, not universal official contract terms.
+LINCOLN_ANNUAL_MAXIMUM = 2000
 DENTAL_PLANS = {
     "LINCOLN_PPO": {
         "name": "Lincoln PPO", "coverageModel": "coinsurance",
-        "annualMaximum": 2000, "deductible": 50,
+        "annualMaximum": LINCOLN_ANNUAL_MAXIMUM, "deductible": 50,
         "preventiveCoverage": 1.00, "basicCoverage": 0.80,
         "majorCoverage": 0.50, "orthodontiaCoverage": 0.50,
         "networkRule": "PPO", "inNetworkAllowed": True,
@@ -722,7 +723,7 @@ DENTAL_PLANS = {
     },
     "LINCOLN_INO": {
         "name": "Lincoln In-Network Only (INO)", "coverageModel": "coinsurance",
-        "annualMaximum": 2000, "deductible": 50,
+        "annualMaximum": LINCOLN_ANNUAL_MAXIMUM, "deductible": 50,
         "preventiveCoverage": 1.00, "basicCoverage": 0.80,
         "majorCoverage": 0.50, "orthodontiaCoverage": 0.50,
         "networkRule": "IN_NETWORK_ONLY", "inNetworkAllowed": True,
