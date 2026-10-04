@@ -129,7 +129,7 @@ def optimize_response(payload: dict) -> dict:
     employee = load_employee(payload.get("employeeEmail"))
     settings = normalize_settings(payload.get("settings"))
     options = build_options(procedures, employee, settings)
-    explanation = add_ai_explanation(options)
+    options, explanation = add_ai_recommendation(options)
     return {
         "provider": payload.get("provider", "Your dental provider"),
         "providerDetails": payload.get("providerDetails"),
@@ -311,11 +311,11 @@ TEXT:
         return None
 
 
-def groq_explain_options(options: list[dict]) -> str:
+def groq_recommend_options(options: list[dict]) -> tuple[str | None, str]:
     api_key = os.environ.get("GROQ_API_KEY", "").strip().strip("\"'")
     if not api_key:
         print("Groq explanation skipped: GROQ_API_KEY is not configured.", file=sys.stderr)
-        return ""
+        return None, ""
     computed = [
         {
             "id": option["id"],
@@ -329,12 +329,13 @@ def groq_explain_options(options: list[dict]) -> str:
         }
         for option in options
     ]
-    prompt = """Write one short, user-friendly explanation of the three
-deterministic dental treatment strategies below. Use exactly two short
-sentences: one sentence comparing the strategies and one sentence stating the
-main recommendation. Use only the supplied numbers. Do not recalculate,
-correct, or invent any number. Return only JSON in this shape:
-{"explanation":"Two short sentences."}
+    prompt = """Choose the best recommendation from the three computed dental
+treatment strategies below, then explain that choice for the user. You may
+only choose one of the supplied strategy IDs. Use exactly three short
+sentences: compare the strategies, explain the recommended strategy, and state
+the main tradeoff. Use only the supplied numbers. Do not recalculate, correct,
+or invent any number. Return only JSON in this shape:
+{"recommendationId":"budget|balanced|premium","explanation":"Three short sentences."}
 
 COMPUTED STRATEGIES:
 """ + json.dumps(computed, separators=(",", ":"))
@@ -370,17 +371,25 @@ COMPUTED STRATEGIES:
         content = payload["choices"][0]["message"]["content"]
         explanation = json.loads(content).get("explanation")
         if not isinstance(explanation, str) or not explanation.strip():
-            print("Groq explanation returned no usable explanation.", file=sys.stderr)
-            return ""
-        print("Groq explanation succeeded.", file=sys.stderr)
-        return explanation.strip()
-    except urllib.error.HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")[:500]
+            print("Groq recommendation returned no usable explanation.", file=sys.stderr)
+            return None, ""
+        recommendation_id = json.loads(content).get("recommendationId")
+        valid_ids = {option["id"] for option in options}
+        if recommendation_id not in valid_ids:
+            print(
+                "Groq recommendation returned an invalid option; using deterministic recommendation.",
+                file=sys.stderr,
+            )
+            return None, ""
         print(
-            f"Groq explanation request failed ({error.code}): {detail}",
+            f"Groq recommendation succeeded: {recommendation_id}.",
             file=sys.stderr,
         )
-        return ""
+        return recommendation_id, explanation.strip()
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        print(f"Groq recommendation request failed ({error.code}): {detail}", file=sys.stderr)
+        return None, ""
     except (
         KeyError,
         TypeError,
@@ -389,21 +398,30 @@ COMPUTED STRATEGIES:
         TimeoutError,
     ):
         print(
-            "Groq explanation response could not be parsed; using deterministic explanation.",
+            "Groq recommendation response could not be parsed; using deterministic recommendation.",
             file=sys.stderr,
         )
-        return ""
+        return None, ""
 
 
-def add_ai_explanation(options: list[dict]) -> str:
-    explanation = groq_explain_options(options)
+def add_ai_recommendation(options: list[dict]) -> tuple[list[dict], str]:
+    deterministic = next(option for option in options if option["recommended"])
+    recommendation_id, explanation = groq_recommend_options(options)
+    if recommendation_id:
+        options = [
+            {**option, "recommended": option["id"] == recommendation_id}
+            for option in options
+        ]
+        recommended = next(option for option in options if option["id"] == recommendation_id)
+    else:
+        recommended = deterministic
     if explanation:
-        return explanation
-    recommended = next(option for option in options if option["recommended"])
-    return (
+        return options, explanation
+    return options, (
         f"Budget minimizes out-of-pocket cost, Balanced weighs cost and timing, "
         f"and Fastest finishes care sooner. {recommended['name']} is recommended "
-        f"for this treatment plan."
+        f"based on the computed cost and timing tradeoff. The main tradeoff is "
+        f"what you pay versus how quickly treatment is completed."
     )
 
 
@@ -867,7 +885,7 @@ def build_response(text: str, email: str | None = None) -> dict:
     months = ["Oct", "Nov", "Dec", "Jan"]
     settings = normalize_settings(None)
     options = build_options(procedures, employee, settings)
-    explanation = add_ai_explanation(options)
+    options, explanation = add_ai_recommendation(options)
 
     return {
         "provider": provider,
