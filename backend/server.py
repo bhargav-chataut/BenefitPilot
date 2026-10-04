@@ -190,7 +190,7 @@ def extract_procedures(text: str) -> list[dict]:
 
 
 def groq_extract(text: str) -> list[dict] | None:
-    api_key = os.environ.get("GROQ_API_KEY")
+    api_key = os.environ.get("GROQ_API_KEY", "").strip().strip("\"'")
     if not api_key:
         return None
     model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
@@ -296,7 +296,7 @@ TEXT:
 
 
 def groq_explain_options(options: list[dict]) -> str:
-    api_key = os.environ.get("GROQ_API_KEY")
+    api_key = os.environ.get("GROQ_API_KEY", "").strip().strip("\"'")
     if not api_key:
         return ""
     computed = [
