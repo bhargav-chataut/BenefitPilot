@@ -142,20 +142,23 @@
           <p>Upload the PDF or type in what your dentist recommended.</p>
         </div>
         <div>
-          <span class="num">2</span><strong>We crunch your benefits</strong>
+          <span class="num">2</span><strong>Understand your coverage</strong>
           <p>We match each procedure against your annual coverage.</p>
         </div>
         <div>
-          <span class="num">3</span><strong>Pick your strategy</strong>
-          <p>Compare budget, balanced, and premium schedules.</p>
+          <span class="num">3</span><strong>Choose your treatment strategy</strong>
+          <p>Compare Budget, Balanced, and Fastest schedules.</p>
         </div>
       </section>
 
       <!-- ============ RESULTS (revealed after AI returns) ============ -->
       <div id="results" hidden>
-        <h2>Your Care Options</h2>
+        <h2>Compare treatment strategies</h2>
         <section class="options" id="options"></section>
-        <p class="optimizer-explanation" id="optimizerExplanation"></p>
+        <section class="recommendation card" aria-labelledby="recommendationTitle">
+          <h3 id="recommendationTitle">Why we recommend this plan</h3>
+          <p class="optimizer-explanation" id="optimizerExplanation"></p>
+        </section>
         <div class="add-plan-actions"><button id="addPlanBtn" class="btn" type="button">Add plan</button>
           <span id="addPlanStatus" role="status"></span>
           <a href="dashboard.html">View dashboard</a></div>
@@ -243,7 +246,7 @@
             </div>
 
             <div class="col">
-              <h5>Current Scenario</h5>
+              <h5>Coverage estimate</h5>
               <div class="seg">
                 <button class="on" data-net="in" type="button">
                   In-network</button
@@ -263,6 +266,7 @@
     <script src="employee.js"></script>
     <script src="benefits.js"></script>
     <script src="notifications.js"></script>
+    <script src="plan-copy.js"></script>
     <script src="results.js"></script>
   </body>
 </html>

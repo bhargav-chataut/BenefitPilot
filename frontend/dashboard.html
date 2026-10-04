@@ -68,7 +68,8 @@
         </div>
       </div>
 
-      <h1>Dashboard</h1>
+      <h1>Make every benefit dollar count.</h1>
+      <p class="sub">See how your care affects your coverage.</p>
 
       <p id="dashboardStatus" role="status"></p>
       <div id="benefitAlert" class="benefit-alert" hidden role="alert">
@@ -76,9 +77,9 @@
         <a href="alerts.html">View benefits</a>
       </div>
       <div class="projection-summary">
-        <span>Projected plan usage <strong id="projected">$0</strong></span>
-        <span>Remaining after plan <strong id="projectedRemaining">$0</strong></span>
-        <span>Next-year projected <strong id="nextYearProjected">$0</strong></span>
+        <span>Benefits applied to planned care <strong id="projected">$0</strong></span>
+        <span>Benefits remaining after planned care <strong id="projectedRemaining">$0</strong></span>
+        <span>Next-year benefits applied <strong id="nextYearProjected">$0</strong></span>
         <a href="results.html">Add plan</a>
       </div>
       <section class="card usage">
@@ -121,20 +122,20 @@
               />
             </svg>
             <div class="donut-c">
-              <strong id="pct">0%</strong><span id="donutLabel">used</span>
+              <strong id="pct">0%</strong><span id="donutLabel">benefits used</span>
             </div>
           </div>
           <div class="stats">
-            <div><small>Annual maximum</small><strong id="max">$0</strong></div>
+            <div><small>Annual plan benefit</small><strong id="max">$0</strong></div>
             <div>
-              <small>Used</small><strong class="blue" id="used">$0</strong>
+              <small>Benefits used</small><strong class="blue" id="used">$0</strong>
             </div>
             <div>
-              <small id="remainingLabel">Remaining</small
+              <small id="remainingLabel">Benefits available</small
               ><strong class="green" id="remaining">$0</strong>
             </div>
             <div id="projectedStat" hidden>
-              <small>Projected</small><strong class="orange" id="projectedDonut">$0</strong>
+              <small>Planned care</small><strong class="orange" id="projectedDonut">$0</strong>
             </div>
           </div>
         </div>
@@ -157,13 +158,13 @@
                 /></svg
             ></span>
             <div class="titles">
-              <h2>Year-at-a-glance</h2>
+              <h2>Benefit utilization</h2>
               <p>
                 Your benefit usage across the plan year (including projected).
               </p>
             </div>
             <div class="legend">
-              <span><i class="dot"></i>Used</span
+              <span><i class="dot"></i>Benefits used</span
               ><span><i class="dot proj"></i>Projected</span>
             </div>
           </header>
@@ -191,7 +192,7 @@
                   stroke="none"
                 /></svg
             ></span>
-            <div class="titles"><h2>Upcoming Care</h2></div>
+            <div class="titles"><h2>Planned care</h2></div>
           </header>
           <ul class="events" id="events"></ul>
         </section>

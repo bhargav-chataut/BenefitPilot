@@ -244,7 +244,7 @@ function render(data, keep = false) {
       <span>${esc(p.name)}${p.code ? ` <small>(${esc(p.code)})</small>` : ""}</span><span class="p">${money(p.cost)}</span></li>`,
     )
     .join("");
-  $("optimizerExplanation").textContent = data.explanation || "";
+
 
   $("fLatest").innerHTML = data.months
     .map((m) => `<option>${esc(m)}</option>`)
@@ -269,11 +269,11 @@ function render(data, keep = false) {
     <label class="opt card" data-id="${esc(o.id)}">
       <input type="radio" name="opt" value="${esc(o.id)}">
       <div class="head"><span class="radio"></span><h4>${esc(o.name)}</h4>${o.recommended ? '<span class="badge">Recommended</span>' : ""}</div>
-      <p class="desc">${esc(o.description)}</p>
+      <div class="desc"><strong>${esc(o.headline || o.name)}</strong><p>${esc(o.description)}</p></div>
       <div class="stats">
-        <div class="stat"><small>You pay</small><strong>${money(o.youPay)}</strong></div>
-        <div class="stat"><small>Plan pays</small><strong>${money(o.planPays)}</strong></div>
-        <div class="stat"><small>Remaining after plan</small><strong class="g">${money(o.benefitRemaining)}</strong></div>
+        <div class="stat"><small>Estimated member cost</small><strong>${money(o.youPay)}</strong></div>
+        <div class="stat"><small>Estimated plan contribution</small><strong>${money(o.planPays)}</strong></div>
+        <div class="stat"><small>Benefits remaining</small><strong class="g">${money(o.benefitRemaining)}</strong></div>
       </div>
       <div class="meta"><svg class="ic"><use href="#cal"/></svg>${data.procedures.length} procedures &bull; ${esc(o.range)}</div>
     </label>`,
@@ -340,11 +340,11 @@ function renderScenario() {
   const s = opt.scenario[state.net];
   $("scenRows").innerHTML = `
     <div><span>Estimated treatment cost</span><b>${money(s.totalCost)}</b></div>
-    <div><span>Plan pays</span><b class="b">${money(s.planPays)}</b></div>
-    <div><span>You pay</span><b class="b">${money(s.youPay)}</b></div>
-    <div><span>Projected benefit use (2026)</span><b>${money(s.benefitUsed)}</b></div>
-    <div><span>Remaining after plan (2026)</span><b class="g">${money(s.benefitRemaining)}</b></div>
-    <div><span>Next-year projected use (2027)</span><b>${money(s.nextYearUsed)}</b></div>
+    <div><span>Estimated plan contribution</span><b class="b">${money(s.planPays)}</b></div>
+    <div><span>Estimated member cost</span><b class="b">${money(s.youPay)}</b></div>
+    <div><span>Benefits applied to planned care (2026)</span><b>${money(s.benefitUsed)}</b></div>
+    <div><span>Benefits remaining (2026)</span><b class="g">${money(s.benefitRemaining)}</b></div>
+    <div><span>Benefits applied next year (2027)</span><b>${money(s.nextYearUsed)}</b></div>
     ${s.monthlyPayments ? s.monthlyPayments.map((amount, i) => `<div><span>Estimated ${esc(state.data.months[i])} payment</span><b>${money(amount)}</b></div>`).join("") : ""}`;
   document
     .querySelectorAll(".seg button")
@@ -361,6 +361,10 @@ function renderScenario() {
     ? "Out-of-network care is not covered by your enrolled plan."
     : "";
   renderBenefitWarning(s);
+  const recommended = state.data.options.find(option => option.recommended);
+  $("optimizerExplanation").textContent = window.BenefitPlanCopy.explain(
+    recommended, state.data.options.find(option => option.id === "premium"), state.net
+  );
 }
 
 function renderBenefitWarning(scenario) {
@@ -371,9 +375,9 @@ function renderBenefitWarning(scenario) {
   warning.hidden = !belowThreshold;
   if (!belowThreshold) return;
   $("benefitWarningTitle").textContent =
-    "Taking your currently added plan will reduce your remaining dental benefit below 20%.";
+    `${money(remaining)} in benefits would remain after this care plan.`;
   $("benefitWarningBody").textContent =
-    `${Math.round((remaining / annualMax) * 100)}% of your ${money(annualMax)} annual maximum will remain. Email sent to ${window.localStorage.getItem("benefitPilot.employeeEmail") || "your email"}.`;
+    `This estimate leaves less than 20% of your ${money(annualMax)} annual plan benefit available this plan year.`;
 }
 
 /* ================= INTERACTIONS ================= */

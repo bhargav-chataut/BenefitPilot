@@ -28,7 +28,7 @@ async function load() {
   const remaining = snapshot.hasPlan ? snapshot.remaining : data.remaining;
   alert.hidden = !(data.annualMax > 0 && remaining / data.annualMax < 0.2);
   $("benefitAlertText").textContent =
-    `${Math.round((remaining / data.annualMax) * 100)}% of your ${money(data.annualMax)} annual maximum will remain.`;
+    `${money(remaining)} in benefits ${snapshot.hasPlan ? "would remain after planned care" : "remains this plan year"} — less than 20% of your annual plan benefit.`;
 }
 window.addEventListener('benefit-plan-changed', load);
 window.addEventListener('pageshow', load);
@@ -52,10 +52,10 @@ function render(d) {
   $("projectedDonut").textContent = money(snapshot.projected);
   $("projectedStat").hidden = !snapshot.hasPlan;
   $("projectedArc").hidden = !snapshot.hasPlan;
-  $("remainingLabel").textContent = snapshot.hasPlan ? "Projected remaining" : "Remaining";
+  $("remainingLabel").textContent = snapshot.hasPlan ? "Benefits remaining after planned care" : "Benefits available";
   const pct = Math.round((usedAmount / d.annualMax) * 100);
   $("pct").textContent = snapshot.hasPlan ? money(snapshot.remaining) : pct + "%";
-  $("donutLabel").textContent = snapshot.hasPlan ? "Projected remaining" : "used";
+  $("donutLabel").textContent = snapshot.hasPlan ? "Benefits remaining" : "benefits used";
   const C = 2 * Math.PI * 88;
   requestAnimationFrame(
     () => {
@@ -116,7 +116,7 @@ function render(d) {
     </div></li>`,
         )
         .join("")
-    : '<li class="empty">No upcoming care scheduled yet.</li>';
+    : '<li class="empty">No planned care scheduled yet.</li>';
 }
 
 load();

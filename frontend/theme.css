@@ -130,14 +130,14 @@ select:focus-visible, textarea:focus-visible, .al:focus-visible {
   padding: 0 24px;
 }
 .btn:hover { background: var(--blue-soft); }
-.btn.primary, .signin-btn, .add-plan-actions button {
+.btn.primary, .signin-btn, .add-plan-actions .btn {
   background: var(--orange);
   border: 1px solid var(--orange);
   color: #fff;
   box-shadow: none;
   border-radius: 8px;
 }
-.btn.primary:hover, .signin-btn:hover, .add-plan-actions button:hover { background: var(--orange-hover); border-color: var(--orange-hover); }
+.btn.primary:hover, .signin-btn:hover, .add-plan-actions .btn:hover { background: var(--orange-hover); border-color: var(--orange-hover); }
 .input { border: 1px solid var(--line); box-shadow: none; }
 .input:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgb(53 100 134 / 12%); }
 .manual textarea, select { border-color: var(--line); background-color: #fff; }

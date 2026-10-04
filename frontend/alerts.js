@@ -41,7 +41,7 @@ function render(d) {
           (a) => `
     <article class="al ${esc(a.type)} ${a.read ? "is-read" : "is-unread"}" data-alert-id="${esc(a.id)}">
       <span class="al-ic">${svg(a.icon)}</span>
-      <div><span class="alert-read-label">${a.read ? "Read" : "Unread"}</span><h3>${esc(a.title)}</h3><p>${esc(a.body).replace(/\n/g, "<br>")}${a.email ? ` Email sent to ${mailto(a.email)}.` : ""}</p>${a.email ? '<small class="alert-email-status">Email sent</small>' : ""}</div>
+      <div><span class="alert-read-label">${a.read ? "Read" : "Unread"}</span><h3>${esc(a.title)}</h3><p>${esc(a.body).replace(/\n/g, "<br>")}</p></div>
       ${a.pill ? `<a class="pill" href="${esc(window.BenefitNotifications.safeHref(a.href))}">${esc(a.pill)}</a>` : ""}
     </article>`,
         )
@@ -59,14 +59,14 @@ function render(d) {
   $("sMax").textContent = money(s.annualMax);
   const snapshot = window.BenefitData.projection();
   $("ringAmt").textContent = money(snapshot.hasPlan ? snapshot.remaining : s.remaining);
-  $("ringLabel").textContent = snapshot.hasPlan ? "Projected remaining" : "remaining";
+  $("ringLabel").textContent = snapshot.hasPlan ? "Benefits remaining" : "Benefits available";
   $("sUsed").textContent = money(snapshot.used);
-  $("sUsedLbl").textContent = `Used (${s.year})`;
+  $("sUsedLbl").textContent = `Benefits used (${s.year})`;
   $("sProjected").textContent = money(snapshot.projected);
   $("projectedSnapshot").hidden = !snapshot.hasPlan;
   $("projectedArc").hidden = !snapshot.hasPlan;
   $("sRem").textContent = money(snapshot.hasPlan ? snapshot.remaining : s.remaining);
-  $("sRemLbl").textContent = snapshot.hasPlan ? "Projected remaining" : "Remaining";
+  $("sRemLbl").textContent = snapshot.hasPlan ? "Benefits remaining after planned care" : "Benefits available";
   const C = 2 * Math.PI * 88;
   requestAnimationFrame(
     () => {
