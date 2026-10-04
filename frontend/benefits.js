@@ -67,6 +67,7 @@
       icon: 'calendar',
       title: 'You still have unused dental benefits that may expire at the end of the year.',
       body: 'Use your remaining benefits before they reset.',
+      email: benefits.email,
       pill: 'View benefits',
       href: 'dashboard.html',
       createdAt: `${benefits.year}-12-01T00:00:00Z`,
