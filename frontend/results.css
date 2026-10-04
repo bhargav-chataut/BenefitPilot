@@ -877,6 +877,15 @@ select {
   font-weight: 600;
   border: 1.5px solid var(--blue);
 }
+.seg button:disabled {
+  color: #9aa6bb;
+  cursor: not-allowed;
+}
+.network-note {
+  margin: -8px 0 12px;
+  color: #7d899e;
+  font-size: 13.5px;
+}
 .rows div {
   display: flex;
   justify-content: space-between;

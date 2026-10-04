@@ -8,6 +8,7 @@ import errno
 import hmac
 import itertools
 import json
+import logging
 import math
 import os
 import re
@@ -32,6 +33,11 @@ EMPLOYEE_RE = re.compile(
     r"\('([^']+)','[^']*','[^']*','([^']+)','([^']+)'",
 )
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+logger = logging.getLogger("benefitpilot")
+logging.basicConfig(
+    level=os.environ.get("BENEFITPILOT_LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 
 def load_dotenv() -> None:
@@ -621,20 +627,34 @@ def load_employee(email: str | None) -> dict:
 
 
 def insurance_info(employee: dict) -> dict:
+    plan = dental_plan(employee)
+    remaining_annual_maximum = (
+        max(0, plan["annualMaximum"] - employee["benefit_used"])
+        if plan["annualMaximum"] is not None else None
+    )
     return {
         "provider": employee["provider"], "planName": employee["plan_name"],
         "enrolledPlan": employee["enrolled_plan"],
-        "planType": employee["plan_type"], "annualMaximum": employee["annual_maximum"],
-        "remainingAnnualMaximum": employee["remaining_maximum"],
+        "planType": employee["plan_type"], "annualMaximum": plan["annualMaximum"],
+        "remainingAnnualMaximum": remaining_annual_maximum,
         "annualBenefitUsed": employee["benefit_used"],
         "remainingDeductible": employee["remaining_deductible"],
-        "coverage": {category: employee[category + "_rate"]
-                     for category in ("preventive", "basic", "major", "orthodontic")},
+        "coverage": {
+            "preventive": plan.get("preventiveCoverage"),
+            "basic": plan.get("basicCoverage"),
+            "major": plan.get("majorCoverage"),
+            "orthodontic": plan.get("orthodontiaCoverage"),
+        },
+        "coverageModel": plan["coverageModel"],
+        "networkRule": plan["networkRule"],
+        "inNetworkAllowed": plan["inNetworkAllowed"],
+        "outOfNetworkAllowed": plan["outOfNetworkAllowed"],
     }
 
 
 def benefits_response(email: str | None) -> dict:
     employee = load_employee(email)
+    plan = dental_plan(employee)
     with sqlite3.connect(":memory:") as database:
         for filename in ("employees.sql", "benefit_transactions.sql"):
             database.executescript((MOCK_DATABASE_DIR / filename).read_text())
@@ -649,8 +669,11 @@ def benefits_response(email: str | None) -> dict:
     return {
         "email": employee["email"], "name": employee["name"],
         "enrolled_plan": employee["enrolled_plan"], "year": 2026,
-        "annualMax": employee["annual_maximum"], "used": employee["benefit_used"],
-        "remaining": employee["remaining_maximum"], "insurance": insurance_info(employee),
+        "annualMax": plan["annualMaximum"], "used": employee["benefit_used"],
+        "remaining": (
+            max(0, plan["annualMaximum"] - employee["benefit_used"])
+            if plan["annualMaximum"] is not None else None
+        ), "insurance": insurance_info(employee),
         "months": [{"month": month, "amount": history.get(index, 0)}
                    for index, month in enumerate(
                        ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)],
@@ -659,6 +682,7 @@ def benefits_response(email: str | None) -> dict:
 
 def project_response(payload: dict) -> dict:
     employee = load_employee(payload.get("employeeEmail"))
+    plan = dental_plan(employee)
     procedures, schedule = payload.get("procedures"), payload.get("schedule")
     settings = normalize_settings(payload.get("settings"))
     if not isinstance(procedures, list) or not procedures or not isinstance(schedule, list):
@@ -672,6 +696,9 @@ def project_response(payload: dict) -> dict:
     network = payload.get("network", "in")
     if network not in ("in", "out"):
         raise ValueError("Choose an available network scenario.")
+    if network == "out" and not plan["outOfNetworkAllowed"]:
+        logger.warning("Rejected out-of-network projection for plan=%s", plan["name"])
+        raise ValueError(f"Out-of-network care is not available with {plan['name']}.")
     return {
         "email": employee["email"], "enrolled_plan": employee["enrolled_plan"],
         "year": 2026, "provider": payload.get("provider", "Your dental provider"),
@@ -682,8 +709,53 @@ def project_response(payload: dict) -> dict:
 
 
 MONTHS = ["Oct", "Nov", "Dec", "Jan"]
-# Demo assumption only; not a verified insurer reimbursement rate.
-OUT_OF_NETWORK_BENEFIT_FACTOR = 0.70
+
+# Lincoln-inspired demo configurations, not universal official contract terms.
+DENTAL_PLANS = {
+    "LINCOLN_PPO": {
+        "name": "Lincoln PPO", "coverageModel": "coinsurance",
+        "annualMaximum": 2000, "deductible": 50,
+        "preventiveCoverage": 1.00, "basicCoverage": 0.80,
+        "majorCoverage": 0.50, "orthodontiaCoverage": 0.50,
+        "networkRule": "PPO", "inNetworkAllowed": True,
+        "outOfNetworkAllowed": True,
+    },
+    "LINCOLN_INO": {
+        "name": "Lincoln In-Network Only (INO)", "coverageModel": "coinsurance",
+        "annualMaximum": 2000, "deductible": 50,
+        "preventiveCoverage": 1.00, "basicCoverage": 0.80,
+        "majorCoverage": 0.50, "orthodontiaCoverage": 0.50,
+        "networkRule": "IN_NETWORK_ONLY", "inNetworkAllowed": True,
+        "outOfNetworkAllowed": False,
+    },
+    "LINCOLN_DHMO": {
+        "name": "Lincoln DHMO", "coverageModel": "copay",
+        "annualMaximum": None, "deductible": 0,
+        "networkRule": "CLOSED_NETWORK", "inNetworkAllowed": True,
+        "outOfNetworkAllowed": False,
+        "copays": {"preventive": 0, "basic": 25, "major": 75, "orthodontic": 100},
+    },
+}
+PLAN_KEY_BY_ENROLLED = {
+    "Lincoln PPO": "LINCOLN_PPO",
+    "Lincoln INO": "LINCOLN_INO",
+    "Lincoln DHMO": "LINCOLN_DHMO",
+}
+
+
+def dental_plan(employee: dict) -> dict:
+    enrolled = employee.get("enrolled_plan")
+    plan_key = PLAN_KEY_BY_ENROLLED.get(enrolled)
+    if plan_key:
+        plan = DENTAL_PLANS[plan_key]
+    else:
+        plan = DENTAL_PLANS["LINCOLN_PPO"] if employee.get("plan_type") == "PPO" else DENTAL_PLANS["LINCOLN_INO"]
+        logger.warning(
+            "Unknown enrolled plan %r; using fallback configuration %s",
+            enrolled,
+            plan["name"],
+        )
+    return plan
 
 
 def normalize_settings(settings: dict | None) -> dict:
@@ -708,39 +780,88 @@ def calculate_schedule(
     procedures: list[dict], schedule: list[int], employee: dict,
     network: str = "in",
 ) -> dict:
-    # The prototype assumes the same plan renews in January.
-    remaining = [float(employee["remaining_maximum"]), float(employee["annual_maximum"])]
-    deductibles = [float(employee["remaining_deductible"]), float(employee["deductible"])]
+    plan = dental_plan(employee) if employee.get("enrolled_plan") else {
+        "name": "Legacy test plan", "coverageModel": "coinsurance",
+        "annualMaximum": employee["annual_maximum"], "deductible": employee["deductible"],
+        "preventiveCoverage": employee.get("preventive_rate", 100) / 100,
+        "basicCoverage": employee.get("basic_rate", 80) / 100,
+        "majorCoverage": employee.get("major_rate", 50) / 100,
+        "orthodontiaCoverage": employee.get("orthodontic_rate", 50) / 100,
+        "inNetworkAllowed": True, "outOfNetworkAllowed": True,
+    }
+    annual_maximum = plan["annualMaximum"]
+    logger.info(
+        "Calculating dental schedule: plan=%s model=%s network=%s procedures=%d",
+        plan["name"],
+        plan["coverageModel"],
+        network,
+        len(procedures),
+    )
+    remaining = [
+        float(employee["remaining_maximum"]) if annual_maximum is not None else None,
+        float(annual_maximum) if annual_maximum is not None else None,
+    ]
+    deductibles = [float(employee["remaining_deductible"]), float(plan["deductible"])]
     paid = [0.0, 0.0]
     monthly = [0.0] * len(MONTHS)
     monthly_benefits = [0.0] * len(MONTHS)
-    factor = 1.0 if network == "in" else OUT_OF_NETWORK_BENEFIT_FACTOR
-    if not employee.get(f"{network}_network_supported", True):
+    if network == "in" and not plan["inNetworkAllowed"]:
+        logger.warning("Blocked network=%s for plan=%s", network, plan["name"])
+        raise ValueError(f"Network is not available with {plan['name']}.")
+    if network == "out" and not plan["outOfNetworkAllowed"]:
+        logger.info("Out-of-network coverage disabled: plan=%s", plan["name"])
         factor = 0.0
+    else:
+        factor = 0.70 if network == "out" and not employee.get("enrolled_plan") else 1.0
     for procedure, month in sorted(zip(procedures, schedule), key=lambda item: item[1]):
         year = int(month >= 3)
         cost = float(procedure["cost"])
         category = procedure.get("category", "basic")
-        rate = employee.get(category + "_rate", employee["basic_rate"]) / 100
+        if plan["coverageModel"] == "copay":
+            copay = min(float(plan["copays"].get(category, 25)), cost)
+            covered = cost - copay
+            paid[year] += covered
+            monthly[month] += copay
+            monthly_benefits[month] += covered
+            continue
+        rate = plan[{
+            "preventive": "preventiveCoverage",
+            "basic": "basicCoverage",
+            "major": "majorCoverage",
+            "orthodontic": "orthodontiaCoverage",
+        }.get(category, "basicCoverage")]
         deductible = 0.0
         if category != "preventive" and rate * factor > 0:
             deductible = min(deductibles[year], cost)
             deductibles[year] -= deductible
-        covered = min(remaining[year], (cost - deductible) * rate * factor)
-        remaining[year] -= covered
+        covered = (cost - deductible) * rate * factor
+        if remaining[year] is not None:
+            covered = min(remaining[year], covered)
+            remaining[year] -= covered
         paid[year] += covered
         monthly[month] += cost - covered
         monthly_benefits[month] += covered
     total = sum(float(p["cost"]) for p in procedures)
-    return {
+    result = {
         "totalCost": round(total, 2), "planPays": round(sum(paid), 2),
         "youPay": round(total - sum(paid), 2),
-        "benefitUsed": round(paid[0], 2), "benefitRemaining": round(remaining[0], 2),
+        "benefitUsed": round(paid[0], 2),
+        "benefitRemaining": round(remaining[0], 2) if remaining[0] is not None else None,
         "nextYearUsed": round(paid[1], 2), "months": MONTHS, "network": network,
         "monthlyPayments": [round(value, 2) for value in monthly],
         "monthlyBenefitPayments": [round(value, 2) for value in monthly_benefits],
         "peakMonthlyPayment": round(max(monthly), 2),
     }
+    logger.info(
+        "Dental schedule result: plan=%s network=%s planPays=%.2f patientPays=%.2f benefitUsed=%.2f remaining=%s",
+        plan["name"],
+        network,
+        result["planPays"],
+        result["youPay"],
+        result["benefitUsed"],
+        result["benefitRemaining"],
+    )
+    return result
 
 
 def generate_schedules(procedures: list[dict], latest: int = 3):
@@ -808,7 +929,11 @@ def recommend_option(selected: dict, employee: dict, settings: dict) -> tuple[st
     savings = round(fastest["youPay"] - cheapest["youPay"], 2)
     meaningful = savings >= max(MIN_MEANINGFUL_SAVINGS,
                                fastest["youPay"] * MEANINGFUL_SAVINGS_FRACTION)
-    nearly_exhausted = employee["remaining_maximum"] <= employee["annual_maximum"] * NEARLY_EXHAUSTED_FRACTION
+    plan = dental_plan(employee)
+    nearly_exhausted = (
+        plan["annualMaximum"] is not None
+        and employee["remaining_maximum"] <= plan["annualMaximum"] * NEARLY_EXHAUSTED_FRACTION
+    )
     moved_to_next_year = any(month == 3 and fastest_schedule[i] < 3
                              for i, month in enumerate(budget_schedule))
     if nearly_exhausted and moved_to_next_year and meaningful:
@@ -827,7 +952,14 @@ def recommend_option(selected: dict, employee: dict, settings: dict) -> tuple[st
 def option_reasoning(name: str, procedures: list[dict], schedule: list[int],
                      scenario: dict, employee: dict, settings: dict, completion: str,
                      description: str, fastest: tuple[list[int], dict]) -> str:
-    money = lambda amount: f"${amount:,.2f}"
+    money = lambda amount: "not applicable" if amount is None else f"${amount:,.2f}"
+    plan = dental_plan(employee)
+    configured_deductible = (
+        plan["deductible"] if employee.get("enrolled_plan") else employee["deductible"]
+    )
+    current_remaining = (
+        employee["remaining_maximum"] if plan["annualMaximum"] is not None else None
+    )
     budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
     fastest_schedule, fastest_scenario = fastest
     savings = round(fastest_scenario["youPay"] - scenario["youPay"], 2)
@@ -859,12 +991,12 @@ def option_reasoning(name: str, procedures: list[dict], schedule: list[int],
     rollover = (
         f"{next_year_count} procedure(s) are scheduled in the next benefit year, with "
         f"{money(scenario['nextYearUsed'])} in estimated next-year coverage. "
-        f"This assumes the same plan renews with a {money(employee['annual_maximum'])} annual allowance "
-        f"and a {money(employee['deductible'])} deductible."
+        f"This assumes the same plan renews with a {money(plan['annualMaximum'])} annual allowance "
+        f"and a {money(configured_deductible)} deductible."
         if next_year_count else "No procedures move into the next benefit year."
     )
     return (
-        f"{movement} {comparison} {description} You start with {money(employee['remaining_maximum'])} of current-year benefits "
+        f"{movement} {comparison} {description} You start with {money(current_remaining)} of current-year benefits "
         f"remaining; this schedule uses {money(scenario['benefitUsed'])} and leaves "
         f"{money(scenario['benefitRemaining'])}. {deductible} "
         f"Your largest estimated monthly payment is {money(scenario['peakMonthlyPayment'])}, "

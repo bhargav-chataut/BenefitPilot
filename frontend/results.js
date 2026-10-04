@@ -47,7 +47,7 @@ const MOCK = {
 
 /* ================= HELPERS ================= */
 const $ = (id) => document.getElementById(id);
-const money = (n) => "$" + Number(n).toLocaleString("en-US");
+const money = (n) => n == null ? "N/A" : "$" + Number(n).toLocaleString("en-US");
 const esc = (s) =>
   String(s).replace(
     /[&<>"]/g,
@@ -251,6 +251,15 @@ function render(data, keep = false) {
   setSelect("fPriority", data.settings.priority);
   setSelect("fProvider", data.settings.provider);
   setSelect("fLatest", data.settings.latestMonth);
+  const providerSelect = $("fProvider");
+  const outOfNetworkAllowed = data.insurance?.outOfNetworkAllowed !== false;
+  [...providerSelect.options].forEach((option) => {
+    const outOfNetworkOption = option.text === "Any provider";
+    option.disabled = !outOfNetworkAllowed && outOfNetworkOption;
+  });
+  if (!outOfNetworkAllowed && providerSelect.value === "Any provider") {
+    providerSelect.value = "In-network only";
+  }
 
   $("options").innerHTML = data.options
     .map(
@@ -337,7 +346,16 @@ function renderScenario() {
     ${s.monthlyPayments ? s.monthlyPayments.map((amount, i) => `<div><span>Estimated ${esc(state.data.months[i])} payment</span><b>${money(amount)}</b></div>`).join("") : ""}`;
   document
     .querySelectorAll(".seg button")
-    .forEach((b) => b.classList.toggle("on", b.dataset.net === state.net));
+    .forEach((b) => {
+      b.classList.toggle("on", b.dataset.net === state.net);
+      b.disabled = b.dataset.net === "out" && state.data.insurance?.outOfNetworkAllowed === false;
+    });
+  const networkNote = $("networkNote");
+  const outOfNetworkBlocked = state.data.insurance?.outOfNetworkAllowed === false;
+  networkNote.hidden = !outOfNetworkBlocked;
+  networkNote.textContent = outOfNetworkBlocked
+    ? `Not available with your ${state.data.insurance.enrolledPlan || "enrolled"} plan.`
+    : "";
   renderBenefitWarning(s);
 }
 
