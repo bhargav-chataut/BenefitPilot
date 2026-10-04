@@ -8,6 +8,7 @@ import errno
 import hmac
 import itertools
 import json
+import math
 import os
 import re
 import sqlite3
@@ -125,30 +126,8 @@ def optimize_response(payload: dict) -> dict:
     if not isinstance(procedures, list) or not procedures:
         raise ValueError("At least one procedure is required.")
     employee = load_employee(payload.get("employeeEmail"))
-    selected_schedules = find_best_options(procedures, employee)
-    options = []
-    for option in ("budget", "balanced", "premium"):
-        schedule, in_scenario = selected_schedules[option]
-        out_scenario = calculate_schedule(procedures, schedule, employee, "out")
-        options.append(
-            {
-                "id": option,
-                "name": "Fastest" if option == "premium" else option.title(),
-                "description": {
-                    "budget": "Maximize your benefits and minimize your out-of-pocket costs.",
-                    "balanced": "Balance your costs and use benefits efficiently.",
-                    "premium": "Get treatment sooner with minimal out-of-pocket costs.",
-                }[option],
-                "recommended": option == "balanced",
-                "youPay": in_scenario["youPay"],
-                "planPays": in_scenario["planPays"],
-                "benefitRemaining": in_scenario["benefitRemaining"],
-                "range": "Oct 2026 – Jan 2027",
-                "schedule": schedule,
-                "scenario": {"in": in_scenario, "out": out_scenario},
-            }
-        )
-    settings = payload.get("settings")
+    settings = normalize_settings(payload.get("settings"))
+    options = build_options(procedures, employee, settings)
     return {
         "provider": payload.get("provider", "Your dental provider"),
         "providerDetails": payload.get("providerDetails"),
@@ -158,7 +137,7 @@ def optimize_response(payload: dict) -> dict:
         "procedures": procedures,
         "pricing": payload.get("pricing"),
         "insurance": payload.get("insurance"),
-        "settings": settings if isinstance(settings, dict) else {},
+        "settings": settings,
         "options": options,
     }
 
@@ -467,154 +446,140 @@ def load_employee(email: str | None) -> dict:
         database.close()
 
 
+MONTHS = ["Oct", "Nov", "Dec", "Jan"]
+
+
+def normalize_settings(settings: dict | None) -> dict:
+    result = {
+        "budget": "$500", "priority": "Balanced",
+        "provider": "In-network preferred", "latestMonth": "Jan",
+    }
+    if isinstance(settings, dict):
+        result.update(settings)
+    try:
+        budget = float(str(result["budget"]).replace("$", "").replace(",", ""))
+    except (ValueError, TypeError):
+        raise ValueError("Provide a valid monthly budget.")
+    if not math.isfinite(budget) or budget < 0:
+        raise ValueError("Provide a valid monthly budget.")
+    if result["latestMonth"] not in MONTHS:
+        raise ValueError("Choose a completion month from Oct through Jan.")
+    return result
+
+
 def calculate_schedule(
-    procedures: list[dict],
-    schedule: list[int],
-    employee: dict,
+    procedures: list[dict], schedule: list[int], employee: dict,
     network: str = "in",
 ) -> dict:
-    months = ["Oct", "Nov", "Dec", "Jan"]
-    rates = {
-        "preventive": employee["preventive_rate"] / 100,
-        "basic": employee["basic_rate"] / 100,
-        "major": employee["major_rate"] / 100,
-        "orthodontic": employee["orthodontic_rate"] / 100,
-    }
-    current_remaining = float(employee["remaining_maximum"])
-    deductible_remaining = float(employee["remaining_deductible"])
-    plan_pays = 0.0
-    next_year_used = 0.0
-    network_factor = 1.0 if network == "in" else 0.7
-    if network == "out" and not employee["out_of_network_supported"]:
-        network_factor = 0.0
-    for procedure, month_index in sorted(
-        zip(procedures, schedule), key=lambda item: item[1]
-    ):
-        rate = rates.get(procedure["category"], rates["basic"])
-        eligible = procedure["cost"] * rate
-        if procedure["category"] != "preventive":
-            deductible_applied = min(deductible_remaining, procedure["cost"])
-            deductible_remaining -= deductible_applied
-            eligible = max(
-                0, (procedure["cost"] - deductible_applied) * rate
-            )
-        if month_index >= 3:
-            next_year_used += eligible * network_factor
-        else:
-            covered = min(current_remaining, eligible)
-            current_remaining -= covered
-            plan_pays += covered
-    if network == "out":
-        plan_pays *= network_factor
-    total = sum(procedure["cost"] for procedure in procedures)
+    # The prototype assumes the same plan renews in January.
+    remaining = [float(employee["remaining_maximum"]), float(employee["annual_maximum"])]
+    deductibles = [float(employee["remaining_deductible"]), float(employee["deductible"])]
+    paid = [0.0, 0.0]
+    monthly = [0.0] * len(MONTHS)
+    factor = 1.0 if network == "in" else 0.7
+    if not employee.get(f"{network}_network_supported", True):
+        factor = 0.0
+    for procedure, month in sorted(zip(procedures, schedule), key=lambda item: item[1]):
+        year = int(month >= 3)
+        cost = float(procedure["cost"])
+        category = procedure.get("category", "basic")
+        rate = employee.get(category + "_rate", employee["basic_rate"]) / 100
+        deductible = 0.0
+        if category != "preventive" and rate * factor > 0:
+            deductible = min(deductibles[year], cost)
+            deductibles[year] -= deductible
+        covered = min(remaining[year], (cost - deductible) * rate * factor)
+        remaining[year] -= covered
+        paid[year] += covered
+        monthly[month] += cost - covered
+    total = sum(float(p["cost"]) for p in procedures)
     return {
-        "totalCost": _money(total),
-        "planPays": _money(plan_pays),
-        "youPay": _money(total - plan_pays),
-        "benefitUsed": _money(plan_pays),
-        "benefitRemaining": _money(current_remaining),
-        "nextYearUsed": _money(next_year_used),
-        "months": months,
-        "network": network,
+        "totalCost": round(total, 2), "planPays": round(sum(paid), 2),
+        "youPay": round(total - sum(paid), 2),
+        "benefitUsed": round(paid[0], 2), "benefitRemaining": round(remaining[0], 2),
+        "nextYearUsed": round(paid[1], 2), "months": MONTHS, "network": network,
+        "monthlyPayments": [round(value, 2) for value in monthly],
+        "peakMonthlyPayment": round(max(monthly), 2),
     }
 
 
-def generate_schedules(procedures: list[dict]) -> list[list[int]]:
-    month_choices = [
-        (0,) if procedure.get("canDelay") is False else (0, 1, 2, 3)
-        for procedure in procedures
-    ]
-    return [
-        list(schedule) for schedule in itertools.product(*month_choices)
-    ]
+def generate_schedules(procedures: list[dict], latest: int = 3):
+    # dependsOn contains zero-based procedure indexes that must occur in an earlier month.
+    for index, procedure in enumerate(procedures):
+        cost = procedure.get("cost")
+        if not isinstance(cost, (float, int)) or not math.isfinite(cost) or cost < 0:
+            raise ValueError("Each procedure needs a nonnegative cost.")
+        dependencies = procedure.get("dependsOn", [])
+        if not isinstance(dependencies, list) or any(
+            type(dep) is not int or dep < 0 or dep >= len(procedures) or dep == index
+            for dep in dependencies
+        ):
+            raise ValueError("Invalid procedure dependencies.")
+    choices = [(0,) if p.get("canDelay") is False else range(latest + 1) for p in procedures]
+    for schedule in itertools.product(*choices):
+        if all(schedule[dep] < schedule[i] for i, p in enumerate(procedures)
+               for dep in p.get("dependsOn", [])):
+            yield list(schedule)
 
 
-def schedule_delay(schedule: list[int]) -> int:
-    return sum(schedule)
+def find_best_options(procedures: list[dict], employee: dict, settings: dict | None = None
+                      ) -> dict[str, tuple[list[int], dict]]:
+    if not procedures:
+        raise ValueError("At least one procedure is required.")
+    settings = normalize_settings(settings)
+    budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
+    winners = {}
+    keys = {}
+    for schedule in generate_schedules(procedures, MONTHS.index(settings["latestMonth"])):
+        scenario = calculate_schedule(procedures, schedule, employee)
+        cost, peak = scenario["youPay"], scenario["peakMonthlyPayment"]
+        finish, delay = max(schedule), sum(schedule)
+        objectives = {
+            "budget": (cost, finish, delay),
+            "balanced": ((0, cost, finish, delay, peak) if peak <= budget
+                         else (1, peak, cost, finish, delay)),
+            "premium": (finish, delay, cost),
+        }
+        for name, key in objectives.items():
+            if name not in keys or key < keys[name]:
+                keys[name] = key
+                winners[name] = (schedule, scenario)
+    if not winners:
+        raise ValueError("No schedule meets the procedure constraints and completion month.")
+    return winners
 
 
-def _normalize(value: float, minimum: float, maximum: float) -> float:
-    if maximum == minimum:
-        return 0.0
-    return (value - minimum) / (maximum - minimum)
-
-
-def find_best_options(
-    procedures: list[dict], employee: dict
-) -> dict[str, tuple[list[int], dict]]:
-    schedules = generate_schedules(procedures)
-    candidates = [
-        (
-            schedule,
-            calculate_schedule(procedures, schedule, employee, "in"),
-            schedule_delay(schedule),
-        )
-        for schedule in schedules
-    ]
-    costs = [candidate[1]["youPay"] for candidate in candidates]
-    delays = [candidate[2] for candidate in candidates]
-    budget = min(candidates, key=lambda item: (item[1]["youPay"], item[2]))
-    balanced = min(
-        candidates,
-        key=lambda item: (
-            0.6 * _normalize(item[1]["youPay"], min(costs), max(costs))
-            + 0.4 * _normalize(item[2], min(delays), max(delays)),
-            item[1]["youPay"],
-            item[2],
-        ),
-    )
-    fastest = min(candidates, key=lambda item: (item[2], item[1]["youPay"]))
-    return {
-        "budget": (budget[0], budget[1]),
-        "balanced": (balanced[0], balanced[1]),
-        "premium": (fastest[0], fastest[1]),
+def build_options(procedures: list[dict], employee: dict, settings: dict) -> list[dict]:
+    selected = find_best_options(procedures, employee, settings)
+    recommended = {"Lowest cost": "budget", "Balanced": "balanced", "Fastest": "premium"}.get(
+        settings["priority"], "balanced")
+    budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
+    descriptions = {
+        "budget": "Lowest total estimated cost; may use next year's benefits.",
+        "balanced": "Lowest total estimated cost within your monthly budget.",
+        "premium": "Finish treatment as soon as the procedure constraints allow.",
     }
-
-
-def find_budget_schedule(
-    procedures: list[dict], employee: dict, schedules: list[list[int]]
-) -> tuple[list[int], dict]:
-    candidates = [
-        (schedule, calculate_schedule(procedures, schedule, employee, "in"))
-        for schedule in schedules
-    ]
-    return min(
-        candidates,
-        key=lambda item: (item[1]["youPay"], sum(item[0]), max(item[0])),
-    )
-
-
-def find_balanced_schedule(
-    procedures: list[dict], employee: dict, schedules: list[list[int]]
-) -> tuple[list[int], dict]:
-    candidates = [
-        (schedule, calculate_schedule(procedures, schedule, employee, "in"))
-        for schedule in schedules
-    ]
-    costs = [item[1]["youPay"] for item in candidates]
-    delays = [schedule_delay(item[0]) for item in candidates]
-    return min(
-        candidates,
-        key=lambda item: (
-            0.6 * _normalize(item[1]["youPay"], min(costs), max(costs))
-            + 0.4 * _normalize(schedule_delay(item[0]), min(delays), max(delays)),
-            item[1]["youPay"],
-            schedule_delay(item[0]),
-        ),
-    )
-
-
-def find_fastest_schedule(
-    procedures: list[dict], employee: dict, schedules: list[list[int]]
-) -> tuple[list[int], dict]:
-    candidates = [
-        (schedule, calculate_schedule(procedures, schedule, employee, "in"))
-        for schedule in schedules
-    ]
-    return min(
-        candidates,
-        key=lambda item: (max(item[0]), sum(item[0]), item[1]["youPay"]),
-    )
+    options = []
+    for name, (schedule, scenario) in selected.items():
+        start, finish = min(schedule), max(schedule)
+        label = lambda month: f"{MONTHS[month]} {2027 if month == 3 else 2026}"
+        description = descriptions[name]
+        if name == "balanced" and scenario["peakMonthlyPayment"] > budget:
+            description = "No schedule fits your monthly budget; this minimizes your largest monthly payment."
+        same = ["Fastest" if other == "premium" else other.title()
+                for other, (other_schedule, _) in selected.items()
+                if other != name and schedule == other_schedule]
+        options.append({
+            "id": name, "name": "Fastest" if name == "premium" else name.title(),
+            "description": description, "recommended": name == recommended,
+            "youPay": scenario["youPay"], "planPays": scenario["planPays"],
+            "benefitRemaining": scenario["benefitRemaining"],
+            "range": label(start) if start == finish else f"{label(start)} – {label(finish)}",
+            "completionMonth": label(finish), "peakMonthlyPayment": scenario["peakMonthlyPayment"],
+            "sameScheduleAs": same, "schedule": schedule,
+            "scenario": {"in": scenario, "out": calculate_schedule(procedures, schedule, employee, "out")},
+        })
+    return options
 
 
 def build_response(text: str, email: str | None = None) -> dict:
@@ -629,36 +594,8 @@ def build_response(text: str, email: str | None = None) -> dict:
     provider_details = lookup_nppes(text, provider)
     visit_date = _field(text, "Visit Date") or date.today().strftime("%b %-d, %Y")
     months = ["Oct", "Nov", "Dec", "Jan"]
-    selected_schedules = find_best_options(procedures, employee)
-    options = []
-    for option_id, description in (
-        (
-            "budget",
-            "Maximize your benefits and minimize your out-of-pocket costs.",
-        ),
-        ("balanced", "Balance your costs and use benefits efficiently."),
-        ("premium", "Get treatment sooner with minimal out-of-pocket costs."),
-    ):
-        schedule, scenario = selected_schedules[option_id]
-        out_scenario = calculate_schedule(procedures, schedule, employee, "out")
-        options.append(
-            {
-                "id": option_id,
-                "name": "Fastest" if option_id == "premium" else option_id.title(),
-                "description": description,
-                "recommended": option_id == "budget",
-                "youPay": scenario["youPay"],
-                "planPays": scenario["planPays"],
-                "benefitRemaining": scenario["benefitRemaining"],
-                "range": "Oct 2026 – Jan 2027",
-                "schedule": schedule,
-                "scenario": {"in": scenario, "out": out_scenario},
-            }
-        )
-
-    recommended_id = "balanced"
-    for option in options:
-        option["recommended"] = option["id"] == recommended_id
+    settings = normalize_settings(None)
+    options = build_options(procedures, employee, settings)
 
     return {
         "provider": provider,
@@ -693,12 +630,7 @@ def build_response(text: str, email: str | None = None) -> dict:
                 "orthodontic": employee["orthodontic_rate"],
             },
         },
-        "settings": {
-            "budget": "$500",
-            "priority": "Lowest cost",
-            "provider": "In-network preferred",
-            "latestMonth": "Jan",
-        },
+        "settings": settings,
         "options": options,
     }
 

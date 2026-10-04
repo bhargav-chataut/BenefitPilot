@@ -67,14 +67,29 @@ the care options. NPPES is queried only when the treatment text contains a
 10-digit NPI; if it is unavailable, the treatment-plan provider text remains
 the source of truth.
 
-The optimizer generates every assignment of procedures to the available
-planning months, calculates each assignment against the employee's plan, and
-selects:
+The optimizer evaluates feasible assignments across October 2026–January 2027:
 
-- **Budget**: the assignment with the lowest employee cost.
-- **Balanced**: the lowest-cost assignment that also follows the natural
-  procedure sequence across months when possible.
-- **Fastest**: the assignment that completes all procedures earliest.
+- **Budget** minimizes total employee cost, then completion time.
+- **Balanced** minimizes total cost within the selected monthly budget. If no
+  schedule fits, it minimizes the largest estimated monthly payment.
+- **Fastest** minimizes completion time, then overall waiting and cost.
+
+The latest acceptable month applies to every option. Non-delayable procedures
+stay in October. Optional `dependsOn` arrays contain zero-based procedure
+indexes that must occur in an earlier month; sequence is never inferred from
+input order. Infeasible constraints return a validation error.
+
+January starts a separate deductible and annual benefit allowance, assuming
+renewal of the same plan. Total insurance payments include both years; annual
+usage fields remain separate. Monthly payments estimate treatment costs in the
+scheduled month, not a financing arrangement. All three options use the same
+in-network pricing assumptions, with out-of-network comparisons available.
+Cards show actual completion dates and highest monthly payments, and identify
+shared schedules when objectives produce the same result. The selected priority
+controls the recommendation badge. Existing API fields and option IDs are
+preserved; monthly payment and shared-schedule metadata are additive.
+
+Run optimizer checks with `python3 -m unittest discover -s tests -v`.
 
 ## Deploy to Render
 
