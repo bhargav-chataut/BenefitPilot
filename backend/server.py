@@ -194,7 +194,7 @@ def groq_extract(text: str) -> list[dict] | None:
     if not api_key:
         print("Groq extraction skipped: GROQ_API_KEY is not configured.", file=sys.stderr)
         return None
-    model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+    model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
     prompt = """You are extracting dental treatment information from messy patient-written text.
 
 Identify ONLY actual dental procedures, treatments, or diagnostic services.
@@ -342,7 +342,7 @@ COMPUTED STRATEGIES:
         GROQ_URL,
         data=json.dumps(
             {
-                "model": os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant"),
+                "model": os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b"),
                 "temperature": 0,
                 "response_format": {"type": "json_object"},
                 "messages": [
