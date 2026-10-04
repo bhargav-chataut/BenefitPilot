@@ -13,7 +13,7 @@ CREATE TABLE employees (
 
   employer TEXT NOT NULL,
   plan_id TEXT NOT NULL,
-  enrolled_plan TEXT NOT NULL DEFAULT 'Lincoln PPO',
+  enrolled_plan TEXT NOT NULL DEFAULT '',
 
   hsa_enrolled INTEGER NOT NULL DEFAULT 0,
   hsa_balance INTEGER NOT NULL DEFAULT 0,
@@ -67,11 +67,7 @@ VALUES
 
 ('EMP021','Bhargav','Chataut','bhargavchataut101@gmail.com','password123','Codelinc','PLAN_PLUS',1,500,1,300),
 ('EMP022','Kris','Chataut','bhargavchataut.bc@gmail.com','password123','Codelinc','PLAN_PLUS',1,500,1,300),
-('EMP023','Bhaskar','Chataut','bhargavchataut9@gmail.com','password123','Codelinc','PLAN_PLUS',1,500,1,300);
-
-UPDATE employees
-SET enrolled_plan = 'Lincoln INO'
-WHERE employee_id = 'EMP023';
+('EMP023','Bhaskar','Chataut','bhargavchataut9@gmail.com','password123','Codelinc','PLAN_INO',1,500,1,300);
 
 SELECT *
 FROM employees;

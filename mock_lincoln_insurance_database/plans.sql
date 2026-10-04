@@ -53,7 +53,7 @@ INSERT INTO plans (
 VALUES
 (
   'PLAN_STANDARD',
-  'Dental PPO Standard',
+  'Lincoln Dental PPO Standard',
   'PPO',
   'Lincoln Financial',
   1500,
@@ -69,7 +69,7 @@ VALUES
 ),
 (
   'PLAN_PLUS',
-  'Dental PPO Plus',
+  'Lincoln Dental PPO Plus',
   'PPO',
   'Lincoln Financial',
   2000,
@@ -85,7 +85,7 @@ VALUES
 ),
 (
   'PLAN_INO',
-  'Dental In-Network',
+  'Lincoln Dental In-Network',
   'INO',
   'Lincoln Financial',
   1750,

@@ -581,7 +581,11 @@ def load_employee(email: str | None) -> dict:
         row = database.execute(
             """
             SELECT e.first_name || ' ' || e.last_name, e.email,
-                   e.enrolled_plan, p.provider, p.plan_type,
+                   e.plan_id, e.enrolled_plan, p.provider, p.plan_name,
+                   p.plan_type, p.annual_maximum, p.deductible,
+                   p.preventive_coverage, p.basic_coverage,
+                   p.major_coverage, p.orthodontic_coverage,
+                   p.in_network_supported, p.out_of_network_supported,
                    b.annual_benefit_used, b.deductible_used
             FROM employees e
             JOIN plans p ON p.plan_id = e.plan_id
@@ -595,25 +599,24 @@ def load_employee(email: str | None) -> dict:
         keys = (
             "name",
             "email",
+            "plan_id",
             "enrolled_plan",
             "provider",
+            "plan_name",
             "plan_type",
+            "annual_maximum",
+            "deductible",
+            "preventive_rate",
+            "basic_rate",
+            "major_rate",
+            "orthodontic_rate",
+            "in_network_supported",
+            "out_of_network_supported",
             "benefit_used",
             "deductible_used",
         )
         employee = dict(zip(keys, row))
-        plan = dental_plan(employee)
-        employee.update(
-            plan_name=plan["name"],
-            annual_maximum=plan["annualMaximum"],
-            deductible=plan["deductible"],
-            preventive_rate=plan.get("preventiveCoverage", 0) * 100,
-            basic_rate=plan.get("basicCoverage", 0) * 100,
-            major_rate=plan.get("majorCoverage", 0) * 100,
-            orthodontic_rate=plan.get("orthodontiaCoverage", 0) * 100,
-            in_network_supported=plan["inNetworkAllowed"],
-            out_of_network_supported=plan["outOfNetworkAllowed"],
-        )
+        employee["enrolled_plan"] = employee["plan_name"]
         employee["remaining_maximum"] = max(
             0,
             employee["annual_maximum"] - employee["benefit_used"]
@@ -656,7 +659,7 @@ def benefits_response(email: str | None) -> dict:
     employee = load_employee(email)
     plan = dental_plan(employee)
     with sqlite3.connect(":memory:") as database:
-        for filename in ("employees.sql", "benefit_transactions.sql"):
+        for filename in ("plans.sql", "employees.sql", "benefit_transactions.sql"):
             database.executescript((MOCK_DATABASE_DIR / filename).read_text())
         rows = database.execute(
             """SELECT CAST(strftime('%m', service_date) AS INTEGER), SUM(benefit_used)
@@ -710,52 +713,63 @@ def project_response(payload: dict) -> dict:
 
 MONTHS = ["Oct", "Nov", "Dec", "Jan"]
 
-# Lincoln-inspired demo configurations, not universal official contract terms.
-LINCOLN_ANNUAL_MAXIMUM = 2000
-DENTAL_PLANS = {
-    "LINCOLN_PPO": {
-        "name": "Lincoln PPO", "coverageModel": "coinsurance",
-        "annualMaximum": LINCOLN_ANNUAL_MAXIMUM, "deductible": 50,
-        "preventiveCoverage": 1.00, "basicCoverage": 0.80,
-        "majorCoverage": 0.50, "orthodontiaCoverage": 0.50,
-        "networkRule": "PPO", "inNetworkAllowed": True,
+# Plan rows provide names, annual maximums, deductibles, coverage, and network
+# support. These values control only behavior that is not represented in SQL.
+PLAN_BEHAVIOR = {
+    "PPO": {
+        "coverageModel": "coinsurance",
+        "networkRule": "PPO",
+        "inNetworkAllowed": True,
         "outOfNetworkAllowed": True,
     },
-    "LINCOLN_INO": {
-        "name": "Lincoln In-Network Only (INO)", "coverageModel": "coinsurance",
-        "annualMaximum": LINCOLN_ANNUAL_MAXIMUM, "deductible": 50,
-        "preventiveCoverage": 1.00, "basicCoverage": 0.80,
-        "majorCoverage": 0.50, "orthodontiaCoverage": 0.50,
-        "networkRule": "IN_NETWORK_ONLY", "inNetworkAllowed": True,
+    "INO": {
+        "coverageModel": "coinsurance",
+        "networkRule": "IN_NETWORK_ONLY",
+        "inNetworkAllowed": True,
         "outOfNetworkAllowed": False,
     },
-    "LINCOLN_DHMO": {
-        "name": "Lincoln DHMO", "coverageModel": "copay",
-        "annualMaximum": None, "deductible": 0,
-        "networkRule": "CLOSED_NETWORK", "inNetworkAllowed": True,
+    "DHMO": {
+        "coverageModel": "copay",
+        "networkRule": "CLOSED_NETWORK",
+        "inNetworkAllowed": True,
         "outOfNetworkAllowed": False,
         "copays": {"preventive": 0, "basic": 25, "major": 75, "orthodontic": 100},
     },
 }
-PLAN_KEY_BY_ENROLLED = {
-    "Lincoln PPO": "LINCOLN_PPO",
-    "Lincoln INO": "LINCOLN_INO",
-    "Lincoln DHMO": "LINCOLN_DHMO",
-}
 
 
 def dental_plan(employee: dict) -> dict:
-    enrolled = employee.get("enrolled_plan")
-    plan_key = PLAN_KEY_BY_ENROLLED.get(enrolled)
-    if plan_key:
-        plan = DENTAL_PLANS[plan_key]
-    else:
-        plan = DENTAL_PLANS["LINCOLN_PPO"] if employee.get("plan_type") == "PPO" else DENTAL_PLANS["LINCOLN_INO"]
-        logger.warning(
-            "Unknown enrolled plan %r; using fallback configuration %s",
-            enrolled,
-            plan["name"],
-        )
+    if not employee.get("enrolled_plan"):
+        return {
+            "name": "Legacy test plan",
+            "coverageModel": "coinsurance",
+            "annualMaximum": employee["annual_maximum"],
+            "deductible": employee["deductible"],
+            "preventiveCoverage": employee.get("preventive_rate", 100) / 100,
+            "basicCoverage": employee.get("basic_rate", 80) / 100,
+            "majorCoverage": employee.get("major_rate", 50) / 100,
+            "orthodontiaCoverage": employee.get("orthodontic_rate", 50) / 100,
+            "inNetworkAllowed": True,
+            "outOfNetworkAllowed": True,
+            "networkRule": "PPO",
+        }
+    plan_type = employee["plan_type"]
+    behavior = PLAN_BEHAVIOR.get(plan_type)
+    if behavior is None:
+        raise ValueError(f"Unsupported dental plan type: {plan_type}.")
+    plan = {
+        "name": employee["plan_name"],
+        "annualMaximum": employee["annual_maximum"],
+        "deductible": employee["deductible"],
+        "preventiveCoverage": employee["preventive_rate"] / 100,
+        "basicCoverage": employee["basic_rate"] / 100,
+        "majorCoverage": employee["major_rate"] / 100,
+        "orthodontiaCoverage": employee["orthodontic_rate"] / 100,
+        **behavior,
+    }
+    if plan_type != "DHMO":
+        plan["inNetworkAllowed"] = bool(employee["in_network_supported"])
+        plan["outOfNetworkAllowed"] = bool(employee["out_of_network_supported"])
     return plan
 
 
