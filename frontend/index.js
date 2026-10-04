@@ -43,6 +43,7 @@ async function authenticate(email, password) {
     });
   }
   if (!response.ok) throw new Error(`Login request failed (${response.status}).`);
+  return response.json();
 }
 
 form.addEventListener("submit", async (e) => {
@@ -62,8 +63,9 @@ form.addEventListener("submit", async (e) => {
 
   setLoading(true);
   try {
-    await authenticate(email, password);
+    const employee = await authenticate(email, password);
     window.localStorage.setItem("benefitPilot.employeeEmail", email);
+    window.localStorage.setItem("benefitPilot.employeeProfile", JSON.stringify({ email, name: employee.name }));
     window.location.href = AUTH.REDIRECT_TO;
   } catch (err) {
     showError(

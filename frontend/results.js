@@ -23,7 +23,7 @@ const CONFIG = {
     procedures: [{ name, code, cost }],
     settings: { budget, priority, provider, latestMonth },
     options: [{
-      id, name, description, recommended,
+      id, name, description, reasoning, recommended,
       youPay, planPays, benefitRemaining, range,
       schedule: [monthIndex per procedure],
       scenario: {
@@ -52,6 +52,7 @@ const MOCK = {
   options: [
     {
       id: "budget",
+      reasoning: "Demo lowest-cost example. Remaining benefits, deductible status, monthly affordability, and year-boundary savings have not been evaluated against your plan.",
       name: "Budget",
       recommended: true,
       description:
@@ -82,6 +83,7 @@ const MOCK = {
     },
     {
       id: "balanced",
+      reasoning: "Demo balanced example with a January procedure. Monthly affordability and next-year coverage have not been evaluated against your plan.",
       name: "Balanced",
       description: "Balance your costs and use benefits efficiently.",
       youPay: 820,
@@ -110,6 +112,7 @@ const MOCK = {
     },
     {
       id: "premium",
+      reasoning: "Demo faster-completion example. The financial benefit of delaying has not been evaluated against your plan.",
       name: "Fastest",
       description: "Get treatment sooner with minimal out-of-pocket costs.",
       youPay: 975,
@@ -351,7 +354,8 @@ function render(data, keep = false) {
       <input type="radio" name="opt" value="${esc(o.id)}">
       <div class="head"><span class="radio"></span><h4>${esc(o.name)}</h4>${o.recommended ? '<span class="badge">Recommended</span>' : ""}</div>
       <p class="desc">${esc(o.description)}</p>
-      ${o.sameScheduleAs?.length ? `<p class="desc">Same schedule also meets the ${o.sameScheduleAs.map(esc).join(" and ")} goal${o.sameScheduleAs.length > 1 ? "s" : ""}.</p>` : ""}
+      ${o.reasoning ? `<p class="desc">${esc(o.reasoning)}</p>` : ""}
+      ${!o.reasoning && o.sameScheduleAs?.length ? `<p class="desc">Same schedule also meets the ${o.sameScheduleAs.map(esc).join(" and ")} goal${o.sameScheduleAs.length > 1 ? "s" : ""}.</p>` : ""}
       <div class="stats">
         <div class="stat"><small>You pay</small><strong>${money(o.youPay)}</strong></div>
         <div class="stat"><small>Plan pays</small><strong>${money(o.planPays)}</strong></div>

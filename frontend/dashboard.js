@@ -167,7 +167,11 @@ async function load() {
 
 /* ================= RENDER ================= */
 function render(d) {
-  if (d.user) $("userName").textContent = d.user.name;
+  if (d.user) {
+    $("userName").textContent = d.user.name;
+    const email = window.localStorage.getItem("benefitPilot.employeeEmail");
+    if (email) window.localStorage.setItem("benefitPilot.employeeProfile", JSON.stringify({ email, name: d.user.name }));
+  }
 
   // Annual maximum card
   $("yearLabel").textContent = d.planYear.year;

@@ -8,7 +8,6 @@ const CONFIG = {
 /*
   Expected backend response (JSON):
   {
-    user: { name },
     lastUpdated: "Oct 1, 2026",
     alerts: [{
       id, type: "warning" | "info" | "danger" | "success",
@@ -23,7 +22,6 @@ const CONFIG = {
   }
 */
 const MOCK = {
-  user: { name: "Bhargav Chataut" },
   lastUpdated: "Oct 1, 2026",
   alerts: [
     {
@@ -135,7 +133,6 @@ async function load() {
 
 /* ================= RENDER ================= */
 function render(d) {
-  if (d.user) $("userName").textContent = d.user.name;
   $("updated").textContent = "Last updated: " + d.lastUpdated;
 
   // nav badge

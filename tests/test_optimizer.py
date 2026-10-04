@@ -80,6 +80,55 @@ class OptimizerTests(unittest.TestCase):
         self.assertEqual(result["planPays"], 200)
         self.assertEqual(result["benefitRemaining"], 0)
 
+    def test_explicit_priority_overrides_automatic(self):
+        for priority, expected in [("Lowest cost", "budget"), ("Balanced", "balanced"), ("Fastest", "premium")]:
+            options = build_options([self.procedure()], self.employee,
+                                    normalize_settings({"priority": priority}))
+            chosen = [o for o in options if o["recommended"]]
+            self.assertEqual([o["id"] for o in chosen], [expected])
+            self.assertIn("you selected", chosen[0]["reasoning"])
+
+    def test_automatic_budget_when_benefits_exhausted(self):
+        options = build_options([self.procedure()], self.employee, normalize_settings(None))
+        chosen = next(o for o in options if o["recommended"])
+        self.assertEqual(chosen["id"], "budget")
+        self.assertIn("nearly exhausted", chosen["reasoning"])
+        self.assertIn("$200.00 versus Fastest", chosen["reasoning"])
+
+    def test_automatic_balanced_for_monthly_affordability(self):
+        employee = dict(self.employee, remaining_maximum=10000, annual_maximum=10000)
+        options = build_options([self.procedure(1000), self.procedure(1000)], employee,
+                                normalize_settings({"budget": "$250"}))
+        self.assertEqual(next(o["id"] for o in options if o["recommended"]), "balanced")
+
+    def test_automatic_fastest_for_identical_results(self):
+        options = build_options([self.procedure(canDelay=False)], self.employee, normalize_settings(None))
+        self.assertEqual(next(o["id"] for o in options if o["recommended"]), "premium")
+        self.assertEqual(len({o["youPay"] for o in options}), 1)
+        self.assertEqual(options[1]["description"], "Same schedule also satisfies your monthly budget.")
+        self.assertIn("earliest feasible", options[2]["description"])
+
+    def test_reasoning_contains_plan_facts_for_every_option(self):
+        employee = dict(self.employee, remaining_deductible=50)
+        options = build_options([self.procedure()], employee, normalize_settings(None))
+        for option in options:
+            reason = option["reasoning"]
+            self.assertIn("$200.00 of current-year benefits", reason)
+            self.assertIn("$50.00 left on your current-year deductible", reason)
+            self.assertIn("$500.00 monthly budget", reason)
+            self.assertIn(option["completionMonth"], reason)
+            if 3 in option["schedule"]:
+                self.assertIn("same plan renews", reason)
+                self.assertIn("$100.00 deductible", reason)
+            else:
+                self.assertIn("No procedures move", reason)
+
+    def test_over_budget_reasoning_does_not_claim_affordability(self):
+        options = build_options([self.procedure(canDelay=False)], self.employee,
+                                normalize_settings({"budget": "$1"}))
+        self.assertIn("No schedule fits", options[1]["description"])
+        self.assertIn("above your $1.00 monthly budget", options[1]["reasoning"])
+
     def test_invalid_constraints(self):
         for procedure in [self.procedure(float("nan")), self.procedure(dependsOn=[8])]:
             with self.assertRaises(ValueError):

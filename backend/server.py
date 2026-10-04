@@ -451,7 +451,7 @@ MONTHS = ["Oct", "Nov", "Dec", "Jan"]
 
 def normalize_settings(settings: dict | None) -> dict:
     result = {
-        "budget": "$500", "priority": "Balanced",
+        "budget": "$500", "priority": "Automatic",
         "provider": "In-network preferred", "latestMonth": "Jan",
     }
     if isinstance(settings, dict):
@@ -549,13 +549,75 @@ def find_best_options(procedures: list[dict], employee: dict, settings: dict | N
     return winners
 
 
+# Product heuristics, not insurance rules. Keep these thresholds explicit.
+NEARLY_EXHAUSTED_FRACTION = 0.20
+MIN_MEANINGFUL_SAVINGS = 100.0
+MEANINGFUL_SAVINGS_FRACTION = 0.05
+MAX_BALANCED_EXTRA_COST = 100.0
+MAX_BALANCED_EXTRA_FRACTION = 0.10
+
+
+def recommend_option(selected: dict, employee: dict, settings: dict) -> tuple[str, str]:
+    explicit = {"Lowest cost": "budget", "Budget": "budget", "Balanced": "balanced",
+                "Fastest": "premium"}.get(settings.get("priority"))
+    if explicit:
+        return explicit, f"Recommended because you selected {settings['priority']} as your priority."
+    budget_schedule, cheapest = selected["budget"]
+    _, balanced = selected["balanced"]
+    fastest_schedule, fastest = selected["premium"]
+    monthly_budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
+    savings = round(fastest["youPay"] - cheapest["youPay"], 2)
+    meaningful = savings >= max(MIN_MEANINGFUL_SAVINGS,
+                               fastest["youPay"] * MEANINGFUL_SAVINGS_FRACTION)
+    nearly_exhausted = employee["remaining_maximum"] <= employee["annual_maximum"] * NEARLY_EXHAUSTED_FRACTION
+    moved_to_next_year = any(month == 3 and fastest_schedule[i] < 3
+                             for i, month in enumerate(budget_schedule))
+    if nearly_exhausted and moved_to_next_year and meaningful:
+        return "budget", f"Recommended because current-year benefits are nearly exhausted and deferring flexible care saves ${savings:,.2f} versus Fastest."
+    affordable = balanced["peakMonthlyPayment"] <= monthly_budget
+    small_extra = balanced["youPay"] - cheapest["youPay"] <= max(
+        MAX_BALANCED_EXTRA_COST, cheapest["youPay"] * MAX_BALANCED_EXTRA_FRACTION)
+    # Prefer affordability when Fastest exceeds the budget; otherwise a tie favors speed.
+    if affordable and small_extra and (meaningful or fastest["peakMonthlyPayment"] > monthly_budget):
+        return "balanced", "Recommended because it fits your monthly budget without major added cost versus Budget."
+    if not meaningful:
+        return "premium", f"Recommended because delaying would save only ${savings:,.2f} versus Fastest."
+    return "budget", "Recommended because it offers meaningful savings and Balanced cannot meet the affordability and added-cost criteria."
+
+
+def option_reasoning(schedule: list[int], scenario: dict, employee: dict,
+                     settings: dict, completion: str, description: str) -> str:
+    money = lambda amount: f"${amount:,.2f}"
+    budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
+    deductible = (f"Your current-year deductible is met."
+                  if employee["remaining_deductible"] == 0
+                  else f"You have {money(employee['remaining_deductible'])} left on your current-year deductible.")
+    affordability = "within" if scenario["peakMonthlyPayment"] <= budget else "above"
+    next_year_count = sum(month == 3 for month in schedule)
+    rollover = (
+        f"{next_year_count} procedure(s) are scheduled in the next benefit year, with "
+        f"{money(scenario['nextYearUsed'])} in estimated next-year coverage. "
+        f"This assumes the same plan renews with a {money(employee['annual_maximum'])} annual allowance "
+        f"and a {money(employee['deductible'])} deductible."
+        if next_year_count else "No procedures move into the next benefit year."
+    )
+    return (
+        f"{description} You start with {money(employee['remaining_maximum'])} of current-year benefits "
+        f"remaining; this schedule uses {money(scenario['benefitUsed'])} and leaves "
+        f"{money(scenario['benefitRemaining'])}. {deductible} "
+        f"Your largest estimated monthly payment is {money(scenario['peakMonthlyPayment'])}, "
+        f"{affordability} your {money(budget)} monthly budget. "
+        f"Treatment finishes in {completion}. {rollover}"
+    )
+
+
 def build_options(procedures: list[dict], employee: dict, settings: dict) -> list[dict]:
+    settings = normalize_settings(settings)
     selected = find_best_options(procedures, employee, settings)
-    recommended = {"Lowest cost": "budget", "Balanced": "balanced", "Fastest": "premium"}.get(
-        settings["priority"], "balanced")
+    recommended, recommendation_reason = recommend_option(selected, employee, settings)
     budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
     descriptions = {
-        "budget": "Lowest total estimated cost; may use next year's benefits.",
+        "budget": "Lowest cost strategy.",
         "balanced": "Lowest total estimated cost within your monthly budget.",
         "premium": "Finish treatment as soon as the procedure constraints allow.",
     }
@@ -569,7 +631,15 @@ def build_options(procedures: list[dict], employee: dict, settings: dict) -> lis
         same = ["Fastest" if other == "premium" else other.title()
                 for other, (other_schedule, _) in selected.items()
                 if other != name and schedule == other_schedule]
+        if same and name == "balanced" and scenario["peakMonthlyPayment"] <= budget:
+            description = "Same schedule also satisfies your monthly budget."
+        elif same and name == "premium":
+            description = "Same schedule is also the earliest feasible option."
+        reasoning = option_reasoning(schedule, scenario, employee, settings, label(finish), description)
+        if name == recommended:
+            reasoning += " " + recommendation_reason
         options.append({
+            "reasoning": reasoning,
             "id": name, "name": "Fastest" if name == "premium" else name.title(),
             "description": description, "recommended": name == recommended,
             "youPay": scenario["youPay"], "planPays": scenario["planPays"],
@@ -715,7 +785,8 @@ class Handler(BaseHTTPRequestHandler):
                 if not employee_id:
                     self._json(401, {"error": "Incorrect email or password."})
                     return
-                self._json(200, {"employee_id": employee_id, "email": email})
+                self._json(200, {"employee_id": employee_id, "email": email,
+                                 "name": load_employee(email)["name"]})
                 return
             if endpoint == "/api/optimize":
                 length = int(self.headers.get("Content-Length", "0"))

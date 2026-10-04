@@ -85,8 +85,20 @@ usage fields remain separate. Monthly payments estimate treatment costs in the
 scheduled month, not a financing arrangement. All three options use the same
 in-network pricing assumptions, with out-of-network comparisons available.
 Cards show actual completion dates and highest monthly payments, and identify
-shared schedules when objectives produce the same result. The selected priority
-controls the recommendation badge. Existing API fields and option IDs are
+shared schedules when objectives produce the same result. Each option includes
+`reasoning` covering remaining annual benefits, deductible status, monthly budget,
+completion month, and next-year procedures. Explicit priority controls the
+recommendation badge; the default **Automatic** uses these product heuristics:
+
+- Recommend Budget when at most 20% of annual benefits remain and moving flexible
+  procedures into January saves at least $100 and 5% versus Fastest.
+- Recommend Balanced when it meets the monthly budget and costs no more than
+  Budget plus the greater of $100 or 10%, provided delaying offers meaningful
+  savings or Fastest exceeds the monthly budget.
+- Otherwise recommend Fastest when savings from delaying are below the meaningful
+  threshold; use Budget when meaningful savings remain but Balanced fails the criteria.
+
+These thresholds select a recommendation; they never alter calculated costs. Existing API fields and option IDs are
 preserved; monthly payment and shared-schedule metadata are additive.
 
 Run optimizer checks with `python3 -m unittest discover -s tests -v`.
