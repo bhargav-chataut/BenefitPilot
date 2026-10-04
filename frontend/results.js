@@ -220,6 +220,8 @@ function setBusy(on) {
 /* ================= RENDER ================= */
 function render(data, keep = false) {
   state.data = data;
+  const outOfNetworkAllowed = data.insurance?.outOfNetworkAllowed !== false;
+  if (!outOfNetworkAllowed) state.net = "in";
   $("addPlanStatus").textContent = "";
   if (!keep || !data.options.some((o) => o.id === state.selected)) {
     state.selected = (
@@ -252,7 +254,6 @@ function render(data, keep = false) {
   setSelect("fProvider", data.settings.provider);
   setSelect("fLatest", data.settings.latestMonth);
   const providerSelect = $("fProvider");
-  const outOfNetworkAllowed = data.insurance?.outOfNetworkAllowed !== false;
   [...providerSelect.options].forEach((option) => {
     const outOfNetworkOption = option.text === "Any provider";
     option.disabled = !outOfNetworkAllowed && outOfNetworkOption;
@@ -260,6 +261,7 @@ function render(data, keep = false) {
   if (!outOfNetworkAllowed && providerSelect.value === "Any provider") {
     providerSelect.value = "In-network only";
   }
+  $("providerNote").hidden = outOfNetworkAllowed;
 
   $("options").innerHTML = data.options
     .map(
@@ -348,13 +350,15 @@ function renderScenario() {
     .querySelectorAll(".seg button")
     .forEach((b) => {
       b.classList.toggle("on", b.dataset.net === state.net);
-      b.disabled = b.dataset.net === "out" && state.data.insurance?.outOfNetworkAllowed === false;
+      const blocked = b.dataset.net === "out" && state.data.insurance?.outOfNetworkAllowed === false;
+      b.disabled = blocked;
+      b.setAttribute("aria-disabled", String(blocked));
     });
   const networkNote = $("networkNote");
   const outOfNetworkBlocked = state.data.insurance?.outOfNetworkAllowed === false;
   networkNote.hidden = !outOfNetworkBlocked;
   networkNote.textContent = outOfNetworkBlocked
-    ? `Not available with your ${state.data.insurance.enrolledPlan || "enrolled"} plan.`
+    ? "Out-of-network care is not covered by your enrolled plan."
     : "";
   renderBenefitWarning(s);
 }

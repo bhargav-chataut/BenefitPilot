@@ -791,6 +791,14 @@ def normalize_settings(settings: dict | None) -> dict:
     return result
 
 
+def validate_provider_preference(settings: dict, employee: dict) -> None:
+    if (
+        settings["provider"] == "Any provider"
+        and not dental_plan(employee)["outOfNetworkAllowed"]
+    ):
+        raise ValueError("Out-of-network care is not covered by your enrolled plan.")
+
+
 def calculate_schedule(
     procedures: list[dict], schedule: list[int], employee: dict,
     network: str = "in",
@@ -1022,6 +1030,7 @@ def option_reasoning(name: str, procedures: list[dict], schedule: list[int],
 
 def build_options(procedures: list[dict], employee: dict, settings: dict) -> list[dict]:
     settings = normalize_settings(settings)
+    validate_provider_preference(settings, employee)
     selected = find_best_options(procedures, employee, settings)
     recommended, recommendation_reason = recommend_option(selected, employee, settings)
     budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))

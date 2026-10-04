@@ -886,6 +886,10 @@ select {
   color: #7d899e;
   font-size: 13.5px;
 }
+.provider-note {
+  display: block;
+  margin: 6px 0 0;
+}
 .rows div {
   display: flex;
   justify-content: space-between;
