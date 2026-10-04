@@ -69,10 +69,12 @@ the source of truth.
 
 The optimizer evaluates feasible assignments across October 2026–January 2027:
 
-- **Budget** minimizes total employee cost, then completion time.
-- **Balanced** minimizes total cost within the selected monthly budget. If no
-  schedule fits, it minimizes the largest estimated monthly payment.
-- **Fastest** minimizes completion time, then overall waiting and cost.
+- **Budget** minimizes total employee cost, then deliberately chooses the latest
+  feasible completion among equal-cost schedules. It minimizes total delay after
+  those ties, so other procedures are not postponed unnecessarily.
+- **Balanced** prioritizes staying within the monthly budget, then minimizes the
+  largest monthly payment and total patient cost, then prefers earlier completion.
+- **Fastest** minimizes completion time, then overall waiting; cost only breaks ties.
 
 The latest acceptable month applies to every option. Non-delayable procedures
 stay in October. Optional `dependsOn` arrays contain zero-based procedure
@@ -83,11 +85,16 @@ January starts a separate deductible and annual benefit allowance, assuming
 renewal of the same plan. Total insurance payments include both years; annual
 usage fields remain separate. Monthly payments estimate treatment costs in the
 scheduled month, not a financing arrangement. All three options use the same
-in-network pricing assumptions, with out-of-network comparisons available.
-Cards show actual completion dates and highest monthly payments, and identify
-shared schedules when objectives produce the same result. Each option includes
+in-network pricing assumptions, with out-of-network comparisons available. The named
+`OUT_OF_NETWORK_BENEFIT_FACTOR = 0.70` is a demo assumption, not a verified
+insurer rate; the existing network calculation is unchanged.
+Cards show plan names, costs, recommendation badges, and schedule ranges.
+Explanations and monthly payment details remain available in the API response. Each option includes
 `reasoning` covering remaining annual benefits, deductible status, monthly budget,
-completion month, and next-year procedures. Explicit priority controls the
+completion month, next-year procedures, schedule changes versus Fastest, actual
+savings versus Fastest, and the change in peak monthly payment. A later Budget
+schedule may have zero savings when selected by the latest-completion tie-breaker.
+Explicit priority controls the
 recommendation badge; the default **Automatic** uses these product heuristics:
 
 - Recommend Budget when at most 20% of annual benefits remain and moving flexible

@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from backend.server import build_options, calculate_schedule, find_best_options, normalize_settings
 
 
@@ -38,7 +39,7 @@ class OptimizerTests(unittest.TestCase):
         # Without year-boundary savings, affordability spreads the payments.
         employee.update(remaining_maximum=10000, annual_maximum=10000)
         options = find_best_options(procedures, employee, {"budget": "$250"})
-        self.assertEqual(options["budget"][0], [0, 0])
+        self.assertEqual(options["budget"][0], [0, 3])
         self.assertEqual(options["balanced"][0], [0, 1])
         self.assertEqual(options["premium"][0], [0, 0])
 
@@ -128,6 +129,46 @@ class OptimizerTests(unittest.TestCase):
                                 normalize_settings({"budget": "$1"}))
         self.assertIn("No schedule fits", options[1]["description"])
         self.assertIn("above your $1.00 monthly budget", options[1]["reasoning"])
+
+    def test_budget_latest_tie_respects_deadline_and_fixed_procedures(self):
+        employee = dict(self.employee, remaining_maximum=10000, annual_maximum=10000)
+        procedures = [self.procedure(canDelay=False), self.procedure(canDelay=True)]
+        options = build_options(procedures, employee, normalize_settings({"latestMonth": "Dec"}))
+        self.assertEqual(options[0]["schedule"], [0, 2])
+        self.assertEqual(options[2]["schedule"], [0, 0])
+        self.assertEqual(options[0]["youPay"], options[2]["youPay"])
+        self.assertIn("latest feasible completion among cost ties", options[0]["reasoning"])
+        self.assertIn("Savings compared with Fastest: $0.00", options[0]["reasoning"])
+        self.assertIn("from Oct to Dec", options[0]["reasoning"])
+        self.assertIn("No procedures move into the next benefit year", options[0]["reasoning"])
+
+    def test_balanced_peak_precedes_cost_and_fastest_delay_precedes_cost(self):
+        # Candidate scores isolate ranking from the separate coverage calculation.
+        schedules = [[0, 0], [0, 1], [1, 1], [0, 2]]
+        scores = [(200, 200), (220, 110), (180, 180), (220, 110)]
+        with patch("backend.server.generate_schedules", return_value=iter(schedules)), patch(
+            "backend.server.calculate_schedule",
+            side_effect=[dict(youPay=cost, peakMonthlyPayment=peak) for cost, peak in scores],
+        ):
+            options = find_best_options([self.procedure(), self.procedure()], self.employee,
+                                        {"budget": "$250"})
+        self.assertEqual(options["balanced"][0], [0, 1])
+        self.assertEqual(options["budget"][0], [1, 1])
+        self.assertEqual(options["premium"][0], [0, 0])
+
+    def test_reasoning_reports_savings_and_payment_impact(self):
+        options = build_options([self.procedure(canDelay=True)], self.employee, normalize_settings(None))
+        reason = options[0]["reasoning"]
+        self.assertIn("Saves $200.00 compared with Fastest", reason)
+        self.assertIn("Peak monthly payment is $200.00 lower", reason)
+        self.assertIn("$400.00 in estimated next-year coverage", reason)
+        self.assertIn("from Oct to Jan", reason)
+
+    def test_demo_network_multiplier_preserves_calculation(self):
+        employee = dict(self.employee, remaining_maximum=1000)
+        result = calculate_schedule([self.procedure()], [0], employee, "out")
+        self.assertEqual(result["planPays"], 336)
+        self.assertEqual(result["youPay"], 264)
 
     def test_invalid_constraints(self):
         for procedure in [self.procedure(float("nan")), self.procedure(dependsOn=[8])]:

@@ -447,6 +447,8 @@ def load_employee(email: str | None) -> dict:
 
 
 MONTHS = ["Oct", "Nov", "Dec", "Jan"]
+# Demo assumption only; not a verified insurer reimbursement rate.
+OUT_OF_NETWORK_BENEFIT_FACTOR = 0.70
 
 
 def normalize_settings(settings: dict | None) -> dict:
@@ -476,7 +478,7 @@ def calculate_schedule(
     deductibles = [float(employee["remaining_deductible"]), float(employee["deductible"])]
     paid = [0.0, 0.0]
     monthly = [0.0] * len(MONTHS)
-    factor = 1.0 if network == "in" else 0.7
+    factor = 1.0 if network == "in" else OUT_OF_NETWORK_BENEFIT_FACTOR
     if not employee.get(f"{network}_network_supported", True):
         factor = 0.0
     for procedure, month in sorted(zip(procedures, schedule), key=lambda item: item[1]):
@@ -535,9 +537,8 @@ def find_best_options(procedures: list[dict], employee: dict, settings: dict | N
         cost, peak = scenario["youPay"], scenario["peakMonthlyPayment"]
         finish, delay = max(schedule), sum(schedule)
         objectives = {
-            "budget": (cost, finish, delay),
-            "balanced": ((0, cost, finish, delay, peak) if peak <= budget
-                         else (1, peak, cost, finish, delay)),
+            "budget": (cost, -finish, delay),
+            "balanced": (peak > budget, peak, cost, finish, delay),
             "premium": (finish, delay, cost),
         }
         for name, key in objectives.items():
@@ -585,10 +586,33 @@ def recommend_option(selected: dict, employee: dict, settings: dict) -> tuple[st
     return "budget", "Recommended because it offers meaningful savings and Balanced cannot meet the affordability and added-cost criteria."
 
 
-def option_reasoning(schedule: list[int], scenario: dict, employee: dict,
-                     settings: dict, completion: str, description: str) -> str:
+def option_reasoning(name: str, procedures: list[dict], schedule: list[int],
+                     scenario: dict, employee: dict, settings: dict, completion: str,
+                     description: str, fastest: tuple[list[int], dict]) -> str:
     money = lambda amount: f"${amount:,.2f}"
     budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
+    fastest_schedule, fastest_scenario = fastest
+    savings = round(fastest_scenario["youPay"] - scenario["youPay"], 2)
+    comparison = (f"Saves {money(savings)} compared with Fastest." if savings > 0 else
+                  f"Costs {money(-savings)} more than Fastest." if savings < 0 else
+                  "Savings compared with Fastest: $0.00.")
+    objectives = {
+        "budget": "Selected for the lowest total patient cost, then the latest feasible completion among cost ties.",
+        "balanced": "Selected to stay within the monthly budget first, then minimize peak monthly payment and total patient cost, with earlier completion breaking ties.",
+        "premium": "Selected for the earliest completion, then the least total delay; cost only breaks ties.",
+    }
+    movements = [
+        f"{procedure.get('name', f'Procedure {i + 1}')} from {MONTHS[fastest_schedule[i]]} to {MONTHS[month]}"
+        for i, (procedure, month) in enumerate(zip(procedures, schedule))
+        if month != fastest_schedule[i]
+    ]
+    movement = ("Schedule changes versus Fastest: " + "; ".join(movements) + ". "
+                if movements else "No procedures moved compared with Fastest. ")
+    movement += objectives[name]
+    peak_change = round(scenario["peakMonthlyPayment"] - fastest_scenario["peakMonthlyPayment"], 2)
+    impact = (f"Peak monthly payment is {money(abs(peak_change))} "
+              f"{'lower' if peak_change < 0 else 'higher'} than Fastest."
+              if peak_change else "Peak monthly payment is unchanged from Fastest.")
     deductible = (f"Your current-year deductible is met."
                   if employee["remaining_deductible"] == 0
                   else f"You have {money(employee['remaining_deductible'])} left on your current-year deductible.")
@@ -602,12 +626,12 @@ def option_reasoning(schedule: list[int], scenario: dict, employee: dict,
         if next_year_count else "No procedures move into the next benefit year."
     )
     return (
-        f"{description} You start with {money(employee['remaining_maximum'])} of current-year benefits "
+        f"{movement} {comparison} {description} You start with {money(employee['remaining_maximum'])} of current-year benefits "
         f"remaining; this schedule uses {money(scenario['benefitUsed'])} and leaves "
         f"{money(scenario['benefitRemaining'])}. {deductible} "
         f"Your largest estimated monthly payment is {money(scenario['peakMonthlyPayment'])}, "
         f"{affordability} your {money(budget)} monthly budget. "
-        f"Treatment finishes in {completion}. {rollover}"
+        f"{impact} Treatment finishes in {completion}. {rollover}"
     )
 
 
@@ -618,7 +642,7 @@ def build_options(procedures: list[dict], employee: dict, settings: dict) -> lis
     budget = float(str(settings["budget"]).replace("$", "").replace(",", ""))
     descriptions = {
         "budget": "Lowest cost strategy.",
-        "balanced": "Lowest total estimated cost within your monthly budget.",
+        "balanced": "Prioritize monthly affordability, then total patient cost.",
         "premium": "Finish treatment as soon as the procedure constraints allow.",
     }
     options = []
@@ -635,7 +659,8 @@ def build_options(procedures: list[dict], employee: dict, settings: dict) -> lis
             description = "Same schedule also satisfies your monthly budget."
         elif same and name == "premium":
             description = "Same schedule is also the earliest feasible option."
-        reasoning = option_reasoning(schedule, scenario, employee, settings, label(finish), description)
+        reasoning = option_reasoning(name, procedures, schedule, scenario, employee, settings,
+                                     label(finish), description, selected["premium"])
         if name == recommended:
             reasoning += " " + recommendation_reason
         options.append({

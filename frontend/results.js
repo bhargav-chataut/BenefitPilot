@@ -353,15 +353,11 @@ function render(data, keep = false) {
     <label class="opt card" data-id="${esc(o.id)}">
       <input type="radio" name="opt" value="${esc(o.id)}">
       <div class="head"><span class="radio"></span><h4>${esc(o.name)}</h4>${o.recommended ? '<span class="badge">Recommended</span>' : ""}</div>
-      <p class="desc">${esc(o.description)}</p>
-      ${o.reasoning ? `<p class="desc">${esc(o.reasoning)}</p>` : ""}
-      ${!o.reasoning && o.sameScheduleAs?.length ? `<p class="desc">Same schedule also meets the ${o.sameScheduleAs.map(esc).join(" and ")} goal${o.sameScheduleAs.length > 1 ? "s" : ""}.</p>` : ""}
       <div class="stats">
         <div class="stat"><small>You pay</small><strong>${money(o.youPay)}</strong></div>
         <div class="stat"><small>Plan pays</small><strong>${money(o.planPays)}</strong></div>
         <div class="stat"><small>Benefit remaining</small><strong class="g">${money(o.benefitRemaining)}</strong></div>
       </div>
-      ${o.peakMonthlyPayment != null ? `<p class="desc">Highest estimated monthly payment: <strong>${money(o.peakMonthlyPayment)}</strong><br>Finish by ${esc(o.completionMonth)}</p>` : ""}
       <div class="meta"><svg class="ic"><use href="#cal"/></svg>${data.procedures.length} procedures &bull; ${esc(o.range)}</div>
     </label>`,
     )
