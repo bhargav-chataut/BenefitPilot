@@ -217,7 +217,7 @@ node --check frontend/benefits.js
 The application is deployed and available at:
 
 ```text
-[[benefitpilot.onrender.com](https://benefitpilot.onrender.com)](https://benefitpilot.onrender.com)
+https://benefitpilot.onrender.com
 ```
 
 The repository also includes `Dockerfile`, `Procfile`, and `render.yaml` for
