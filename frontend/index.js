@@ -1,8 +1,10 @@
 /* ================= CONFIG ================= */
 const AUTH = {
-  LOGIN_URL: "/api/login", // POST JSON { email, password } -> 2xx on success
+  LOGIN_URL:
+    window.location.protocol === "file:"
+      ? "http://localhost:8001/api/login"
+      : "/api/login",
   REDIRECT_TO: "dashboard.html", // where to go after sign-in
-  USE_MOCK_ON_ERROR: true, // set to false once your backend is live
 };
 
 const $ = (id) => document.getElementById(id);
@@ -29,6 +31,20 @@ function setLoading(on) {
   $("signInLabel").textContent = on ? "Signing in…" : "Sign In";
 }
 
+async function authenticate(email, password) {
+  const response = await fetch(AUTH.LOGIN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (response.status === 401 || response.status === 403) {
+    throw Object.assign(new Error("Incorrect email or password."), {
+      auth: true,
+    });
+  }
+  if (!response.ok) throw new Error(`Login request failed (${response.status}).`);
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   showError("");
@@ -46,19 +62,8 @@ form.addEventListener("submit", async (e) => {
 
   setLoading(true);
   try {
-    try {
-      const res = await fetch(AUTH.LOGIN_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.status === 401 || res.status === 403)
-        throw Object.assign(new Error("bad"), { auth: true });
-      if (!res.ok) throw new Error("Request failed (" + res.status + ")");
-    } catch (err) {
-      if (err.auth || !AUTH.USE_MOCK_ON_ERROR) throw err;
-      await new Promise((r) => setTimeout(r, 900)); // demo only: backend not reachable
-    }
+    await authenticate(email, password);
+    window.localStorage.setItem("benefitPilot.employeeEmail", email);
     window.location.href = AUTH.REDIRECT_TO;
   } catch (err) {
     showError(

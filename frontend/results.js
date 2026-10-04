@@ -1,7 +1,13 @@
 /* ================= CONFIG ================= */
 const CONFIG = {
-  API_URL: "/api/analyze", // POST: multipart form with `file` (PDF) and/or `text`
-  OPTIMIZE_URL: "/api/optimize", // POST: JSON with the user's schedule + preferences; returns the same shape as API_URL
+  API_URL:
+    window.location.protocol === "file:"
+      ? "http://localhost:8001/api/analyze"
+      : "/api/analyze", // POST: multipart form with `file` (PDF) and/or `text`
+  OPTIMIZE_URL:
+    window.location.protocol === "file:"
+      ? "http://localhost:8001/api/optimize"
+      : "/api/optimize", // POST: JSON with the user's schedule + preferences; returns the same shape as API_URL
   USE_MOCK_ON_ERROR: true, // set to false once your backend is live
 };
 
@@ -227,16 +233,27 @@ async function analyze({ file, text }) {
     let data;
     try {
       const res = await fetch(CONFIG.API_URL, { method: "POST", body });
-      if (!res.ok) throw new Error("Request failed (" + res.status + ")");
+      if (!res.ok) {
+        let message = "The treatment plan could not be extracted.";
+        try {
+          const payload = await res.json();
+          if (payload.error) message = payload.error;
+        } catch {
+          // Keep the user-facing fallback message for non-JSON responses.
+        }
+        const error = new Error(message);
+        error.apiResponse = true;
+        throw error;
+      }
       data = await res.json();
     } catch (err) {
-      if (!CONFIG.USE_MOCK_ON_ERROR) throw err;
+      if (!CONFIG.USE_MOCK_ON_ERROR || err.apiResponse) throw err;
       await wait(3500); // simulate AI processing time
       data = MOCK;
     }
     render(data);
   } catch (err) {
-    showError("We couldn’t process that plan. Please try again.");
+    showError(err.message || "We couldn’t process that plan. Please try again.");
   } finally {
     clearInterval(timer);
     $("loading").hidden = true;

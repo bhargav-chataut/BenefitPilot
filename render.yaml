@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: benefitpilot
+    runtime: docker
+    plan: free
+    healthCheckPath: /frontend/index.html

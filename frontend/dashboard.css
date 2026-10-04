@@ -237,6 +237,14 @@ h1 {
   color: var(--gray);
   margin-top: 10px;
 }
+.database-error {
+  margin-top: 30px;
+  padding: 16px 20px;
+  border: 1px solid #f2c8c2;
+  border-radius: 12px;
+  color: #a83224;
+  background: #fff5f3;
+}
 
 .card {
   background: #fff;
@@ -416,11 +424,11 @@ h1 {
   display: grid;
   grid-template-columns: 52px 1fr;
   grid-template-rows: auto 34px;
-  margin-top: 22px;
+  margin-top: 16px;
 }
 .yaxis {
   position: relative;
-  height: 170px;
+  height: 135px;
 }
 .yaxis span {
   position: absolute;
@@ -431,7 +439,7 @@ h1 {
 }
 .plot {
   position: relative;
-  height: 170px;
+  height: 135px;
   display: flex;
   border-left: 1px solid #e9eef6;
 }
@@ -476,6 +484,11 @@ h1 {
   text-align: center;
   font-size: 14px;
   color: #4d5873;
+}
+.xaxis .chart-empty {
+  flex: 1;
+  color: var(--gray);
+  font-style: italic;
 }
 
 /* upcoming */

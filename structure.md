@@ -1,7 +1,9 @@
 # BenefitPilot Structure
 
 Simple frontend layout for the reference design: a left sidebar with Dashboard,
-Treatments, and Alerts, and page content on the right.
+Treatments, and Alerts, and page content on the right. The login and dashboard
+load the SQL seed files directly in the browser through SQLite WebAssembly; no
+database API is required for those screens.
 
 ```text
 codelinc/
@@ -20,7 +22,9 @@ codelinc/
 ├── MOCKDATA_BASE/
 │   ├── employees.sql
 │   ├── plans.sql
-│   └── benefit_usuage.sql
+│   ├── benefit_usage.sql
+│   ├── benefit_transactions.sql
+│   └── upcoming_care.sql
 ├── .gitignore
 ├── README.md
 ├── structure.md

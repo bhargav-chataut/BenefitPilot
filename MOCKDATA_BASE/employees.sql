@@ -3,7 +3,7 @@
 -- 2. EMPLOYEES
 -- -------------------------
 
-CREATE TABLE employees_h (
+CREATE TABLE employees (
   employee_id TEXT PRIMARY KEY,
 
   first_name TEXT NOT NULL,
@@ -21,10 +21,10 @@ CREATE TABLE employees_h (
   fsa_balance INTEGER NOT NULL DEFAULT 0,
 
   FOREIGN KEY (plan_id)
-    REFERENCES plans_h(plan_id)
+    REFERENCES plans(plan_id)
 );
 
-INSERT INTO employees_h (
+INSERT INTO employees (
   employee_id,
   first_name,
   last_name,
@@ -62,7 +62,9 @@ VALUES
 ('EMP017','James','Hernandez','james@magnolia-demo.com','password123','Magnolia Manufacturing','PLAN_PLUS',1,2000,0,0),
 ('EMP018','Amelia','King','amelia@magnolia-demo.com','password123','Magnolia Manufacturing','PLAN_STANDARD',0,0,1,500),
 ('EMP019','Benjamin','Wright','ben@magnolia-demo.com','password123','Magnolia Manufacturing','PLAN_INO',1,700,0,0),
-('EMP020','Harper','Scott','harper@magnolia-demo.com','password123','Magnolia Manufacturing','PLAN_PLUS',1,550,1,250);
+('EMP020','Harper','Scott','harper@magnolia-demo.com','password123','Magnolia Manufacturing','PLAN_PLUS',1,550,1,250),
+
+('EMP021','Bhargav','Chataut','bhargavchataut101@gmail.com','password123','Codelinc','PLAN_PLUS',1,500,1,300);
 
 SELECT *
-FROM employees_h;
+FROM employees;

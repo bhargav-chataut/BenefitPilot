@@ -13,7 +13,7 @@ PRAGMA foreign_keys = ON;
 -- -------------------------
 -- 1. PLANS
 -- -------------------------
-CREATE TABLE plans_h (
+CREATE TABLE plans (
   plan_id TEXT PRIMARY KEY,
   plan_name TEXT NOT NULL,
   plan_type TEXT NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE plans_h (
   plan_reset_day INTEGER NOT NULL DEFAULT 1
 );
 
-INSERT INTO plans_h (
+INSERT INTO plans (
   plan_id,
   plan_name,
   plan_type,
