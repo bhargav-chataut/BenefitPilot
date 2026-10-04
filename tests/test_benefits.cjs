@@ -60,11 +60,12 @@ test('old projection is ignored if actual benefits change', async()=>{
   assert.equal(updated.api.dashboard().projected, 0);
 });
 
-test('alerts describe actual remaining benefits without claiming email delivery', async()=>{
+test('alerts include simulated email status for remaining benefits', async()=>{
   const {api} = await setup({...baseline, remaining:520});
   const alert = api.alertsData().alerts[0];
-  assert.equal(alert.title, '$520 in dental benefits remains this plan year');
-  assert.equal(alert.email, undefined);
+  assert.equal(alert.title, 'You still have unused dental benefits that may expire at the end of the year.');
+  assert.match(alert.body, /Use your remaining benefits before they reset\./);
+  assert.match(alert.body, /Email sent to alex@example.com\./);
 });
 test('plan alerts are gated by computed next-year use, network and monthly target', async()=>{
   const saved = {...plan, network:'out', settings:{budget:'$500'},
