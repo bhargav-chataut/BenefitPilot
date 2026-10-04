@@ -4,7 +4,11 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const code = fs.readFileSync('frontend/notifications.js', 'utf8');
 
-async function page(storage = new Map(), data = null) {
+const fixture = {
+  alerts: [1, 2, 3, 4].map(id => ({id, read: false, status: 'active', title: 'Alert ' + id, body: 'Details'})),
+  past: [1, 2, 3].map(id => ({id: 'past-' + id, read: true, status: 'resolved'})),
+};
+async function page(storage = new Map(), data = fixture) {
   const documentEvents = {}, windowEvents = {};
   const badge = {setAttribute() {}};
   const popupItems = {innerHTML: ''};

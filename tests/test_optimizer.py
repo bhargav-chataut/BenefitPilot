@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from backend.server import build_options, calculate_schedule, find_best_options, normalize_settings
+from backend.server import build_options, calculate_schedule, find_best_options, normalize_settings, benefits_response, project_response, optimize_response
 
 
 class OptimizerTests(unittest.TestCase):
@@ -169,6 +169,25 @@ class OptimizerTests(unittest.TestCase):
         result = calculate_schedule([self.procedure()], [0], employee, "out")
         self.assertEqual(result["planPays"], 336)
         self.assertEqual(result["youPay"], 264)
+
+    def test_dashboard_and_treatment_numbers_share_employee_plan(self):
+        benefits = benefits_response(None)
+        response = optimize_response({"procedures": [self.procedure()]})
+        self.assertEqual(response["insurance"], benefits["insurance"])
+        self.assertEqual(sum(month["amount"] for month in benefits["months"]), benefits["used"])
+        self.assertEqual(benefits["used"] + benefits["remaining"], benefits["annualMax"])
+        for option in response["options"]:
+            projection = project_response({"procedures": [self.procedure()], "schedule": option["schedule"]})
+            scenario = projection["scenario"]
+            self.assertEqual(scenario, option["scenario"]["in"])
+            self.assertAlmostEqual(sum(scenario["monthlyBenefitPayments"][:3]), scenario["benefitUsed"])
+            self.assertEqual(scenario["monthlyBenefitPayments"][3], scenario["nextYearUsed"])
+            self.assertEqual(scenario["benefitRemaining"], benefits["remaining"] - scenario["benefitUsed"])
+
+    def test_projection_rejects_invalid_or_disallowed_schedules(self):
+        for schedule in [[3], [9], [], [True]]:
+            with self.assertRaises(ValueError):
+                project_response({"procedures": [self.procedure(canDelay=False)], "schedule": schedule})
 
     def test_invalid_constraints(self):
         for procedure in [self.procedure(float("nan")), self.procedure(dependsOn=[8])]:

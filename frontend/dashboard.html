@@ -70,6 +70,14 @@
       <h1>Dashboard</h1>
       <p class="sub">Track your dental benefits and upcoming care.</p>
 
+      <p id="dashboardStatus" role="status"></p>
+      <a id="benefitAlert" class="benefit-alert" href="alerts.html" hidden></a>
+      <div class="projection-summary">
+        <span>Projected plan usage <strong id="projected">$0</strong></span>
+        <span>Remaining after plan <strong id="projectedRemaining">$0</strong></span>
+        <span>Next-year projected <strong id="nextYearProjected">$0</strong></span>
+        <a href="results.html">Add plan</a>
+      </div>
       <!-- ============ Annual Maximum Usage ============ -->
       <section class="card usage">
         <header class="card-head">
@@ -179,8 +187,8 @@
       </div>
     </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
     <script src="employee.js"></script>
+    <script src="benefits.js"></script>
     <script src="notifications.js"></script>
     <script src="dashboard.js"></script>
   </body>

@@ -49,6 +49,11 @@ function render(d) {
 
   // snapshot
   const s = d.snapshot;
+  if (!s) {
+    ["ringAmt", "sMax", "sUsed", "sRem"].forEach(id => $(id).textContent = "—");
+    $("alerts").innerHTML = '<p class="empty card" style="padding:28px">Benefits are unavailable. Please refresh to load your alerts.</p>';
+    return;
+  }
   $("ringAmt").textContent = money(s.remaining);
   $("sMax").textContent = money(s.annualMax);
   $("sUsed").textContent = money(s.used);
@@ -58,7 +63,7 @@ function render(d) {
   requestAnimationFrame(
     () =>
       ($("arc").style.strokeDasharray =
-        `${(s.remaining / s.annualMax) * C} ${C}`),
+        `${(s.annualMax ? s.remaining / s.annualMax : 0) * C} ${C}`),
   );
 
   // important dates

@@ -154,6 +154,9 @@
       <div id="results" hidden>
         <h2>Your Care Options</h2>
         <section class="options" id="options"></section>
+        <div class="add-plan-actions"><button id="addPlanBtn" class="btn" type="button">Add plan</button>
+          <span id="addPlanStatus" role="status"></span>
+          <a href="dashboard.html">View dashboard</a></div>
 
         <section class="plan card">
           <div class="plan-head">
@@ -239,7 +242,7 @@
               </div>
               <div class="rows" id="scenRows"></div>
               <div class="note">
-                <i>i</i>Updates automatically as you adjust your plan.
+                <i>i</i>Add your selected plan to update dashboard projections.
               </div>
             </div>
           </div>
@@ -248,6 +251,7 @@
     </main>
 
     <script src="employee.js"></script>
+    <script src="benefits.js"></script>
     <script src="notifications.js"></script>
     <script src="results.js"></script>
   </body>

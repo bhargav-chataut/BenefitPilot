@@ -1001,3 +1001,8 @@ select {
   width: 16px;
   height: 16px;
 }
+
+.add-plan-actions { display:flex; align-items:center; flex-wrap:wrap; gap:16px; margin:20px 0; }
+.add-plan-actions button { background:#245fc0; color:white; padding:12px 22px; border:0; border-radius:10px; font:inherit; cursor:pointer; }
+.add-plan-actions button:disabled { opacity:.6; cursor:wait; }
+.add-plan-actions a { color:#245fc0; }

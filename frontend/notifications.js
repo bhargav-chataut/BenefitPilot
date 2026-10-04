@@ -1,95 +1,6 @@
 /* Shared notification feed and per-account hackathon read state. */
 (() => {
-const DEMO = {
-  lastUpdated: "Oct 1, 2026",
-  alerts: [
-    {
-      id: 1,
-      read: false,
-      status: "active",
-      createdAt: "2026-10-01T12:00:00Z",
-      type: "warning",
-      icon: "clock",
-      title: "You have $520 of your annual dental benefit remaining",
-      body: "Your plan year ends January 1, 2027. Unused benefits typically do not roll over.",
-      pill: "3 months left",
-      href: "dashboard.html",
-    },
-    {
-      id: 2,
-      read: false,
-      status: "active",
-      createdAt: "2026-10-02T12:00:00Z",
-      type: "info",
-      icon: "calendar",
-      title: "You have planned treatments that can be scheduled this year",
-      body: "1 procedure is currently planned for next year. Moving it earlier may help you use more of your remaining benefits, if your dentist agrees.",
-      pill: "Review Timing",
-      href: "results.html",
-    },
-    {
-      id: 3,
-      read: false,
-      status: "active",
-      createdAt: "2026-10-03T12:00:00Z",
-      type: "danger",
-      icon: "warning",
-      title: "Your current provider is out-of-network",
-      body: "Your estimated out-of-pocket cost could be higher.\nConsider an in-network provider to maximize your benefits.",
-      pill: "See In-Network Options",
-      href: "results.html",
-    },
-    {
-      id: 4,
-      read: false,
-      status: "active",
-      createdAt: "2026-10-04T12:00:00Z",
-      type: "success",
-      icon: "doc",
-      title: "New explanation of benefits (EOB) available",
-      body: "Your recent claim from Sep 12, 2026 has been processed.",
-      pill: "View EOB",
-      href: "#",
-    },
-  ],
-  snapshot: { annualMax: 1500, used: 980, remaining: 520, year: 2026 },
-  dates: [
-    { label: "Plan year ends", date: "Jan 1, 2027", color: "red" },
-    { label: "Next benefit reset", date: "Jan 1, 2027", color: "blue" },
-    { label: "Upcoming appointment", date: "Oct 15, 2026", color: "blue" },
-    { label: "Planned crown (flexible)", date: "Jan 2027", color: "gray" },
-  ],
-  past: [
-    {
-      icon: "mail",
-      id: "past-1",
-      read: true,
-      status: "expired",
-      title: "Monthly reminder",
-      body: "You had $620 of benefits remaining.",
-      date: "Sep 1, 2026",
-    },
-    {
-      icon: "doc",
-      id: "past-2",
-      read: true,
-      status: "resolved",
-      title: "Treatment plan analyzed",
-      body: "We extracted 3 procedures from your dentist's treatment plan.",
-      date: "Aug 28, 2026",
-    },
-    {
-      icon: "info",
-      id: "past-3",
-      read: true,
-      status: "resolved",
-      title: "Welcome to BenefitPilot",
-      body: "Start by uploading your dentist's treatment plan.",
-      date: "Aug 20, 2026",
-    },
-  ],
-};
-
+const DEMO = {lastUpdated: 'Unavailable', alerts: [], snapshot: null, dates: [], past: []};
   const esc = (value) => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function safeHref(value) {
     try {
@@ -228,6 +139,12 @@ const DEMO = {
   window.addEventListener('focus', syncPage);
   async function load() {
     try {
+      if (window.BenefitData) {
+        await window.BenefitData.ready;
+        source = window.BenefitData.alertsData();
+        refresh();
+        return;
+      }
       const response = await fetch('/api/alerts');
       if (!response.ok) throw new Error('Alerts unavailable');
       const data = await response.json();
@@ -239,6 +156,12 @@ const DEMO = {
     } catch { /* Shared demo feed until an alerts API is available. */ }
     refresh();
   }
+  window.addEventListener('benefit-plan-changed', () => {
+    if (!window.BenefitData) return;
+    source = window.BenefitData.alertsData();
+    refresh();
+    window.dispatchEvent(new Event('benefit-alerts-data'));
+  });
   window.BenefitNotifications = {getData, unread, markRead, clearPast, safeHref, ready: load()};
   refresh();
 })();
