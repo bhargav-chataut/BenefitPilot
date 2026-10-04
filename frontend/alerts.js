@@ -23,7 +23,7 @@ const svg = (name, cls = "") =>
 
 /* ================= LOAD ================= */
 async function load() {
-  await window.BenefitNotifications.ready;
+  await Promise.all([window.BenefitNotifications.ready, window.BenefitData.ready]);
   render(window.BenefitNotifications.getData());
   $("main").classList.remove("loading");
 }
@@ -56,14 +56,23 @@ function render(d) {
   }
   $("ringAmt").textContent = money(s.remaining);
   $("sMax").textContent = money(s.annualMax);
-  $("sUsed").textContent = money(s.used);
+  const snapshot = window.BenefitData.projection();
+  $("ringAmt").textContent = money(snapshot.hasPlan ? snapshot.remaining : s.remaining);
+  $("ringLabel").textContent = snapshot.hasPlan ? "Projected remaining" : "remaining";
+  $("sUsed").textContent = money(snapshot.used);
   $("sUsedLbl").textContent = `Used (${s.year})`;
-  $("sRem").textContent = money(s.remaining);
+  $("sProjected").textContent = money(snapshot.projected);
+  $("sRem").textContent = money(snapshot.hasPlan ? snapshot.remaining : s.remaining);
+  $("sRemLbl").textContent = snapshot.hasPlan ? "Projected remaining" : "Remaining";
   const C = 2 * Math.PI * 88;
   requestAnimationFrame(
-    () =>
-      ($("arc").style.strokeDasharray =
-        `${(s.annualMax ? s.remaining / s.annualMax : 0) * C} ${C}`),
+    () => {
+      const usedLength = (snapshot.used / s.annualMax) * C;
+      $("arc").style.strokeDasharray = `${usedLength} ${C}`;
+      $("projectedArc").style.strokeDasharray =
+        `${(snapshot.projected / s.annualMax) * C} ${C}`;
+      $("projectedArc").style.strokeDashoffset = -usedLength;
+    },
   );
 
   // important dates

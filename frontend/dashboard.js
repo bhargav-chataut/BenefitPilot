@@ -44,12 +44,24 @@ function render(d) {
     `Plan year: ${d.planYear.start} – ${d.planYear.end}`;
   $("max").textContent = money(d.annualMax);
   $("used").textContent = money(d.used);
-  $("remaining").textContent = money(d.remaining);
-  const pct = Math.round((d.used / d.annualMax) * 100);
-  $("pct").textContent = pct + "%";
+  const snapshot = window.BenefitData.projection();
+  const usedAmount = snapshot.used + snapshot.projected;
+  $("remaining").textContent = money(snapshot.hasPlan ? snapshot.remaining : d.remaining);
+  $("projectedDonut").textContent = money(snapshot.projected);
+  $("projectedStat").hidden = !snapshot.hasPlan;
+  $("remainingLabel").textContent = snapshot.hasPlan ? "Projected remaining" : "Remaining";
+  const pct = Math.round((usedAmount / d.annualMax) * 100);
+  $("pct").textContent = snapshot.hasPlan ? money(snapshot.remaining) : pct + "%";
+  $("donutLabel").textContent = snapshot.hasPlan ? "Projected remaining" : "used";
   const C = 2 * Math.PI * 88;
   requestAnimationFrame(
-    () => ($("arc").style.strokeDasharray = `${(pct / 100) * C} ${C}`),
+    () => {
+      const usedLength = (snapshot.used / d.annualMax) * C;
+      $("arc").style.strokeDasharray = `${usedLength} ${C}`;
+      $("projectedArc").style.strokeDasharray =
+        `${(snapshot.projected / d.annualMax) * C} ${C}`;
+      $("projectedArc").style.strokeDashoffset = -usedLength;
+    },
   );
 
   // Year-at-a-glance chart
@@ -93,11 +105,10 @@ function render(d) {
     ? d.upcoming
         .map(
           (e) => `
-    <li><a class="ev" href="${esc(e.href || "results.html")}">
+    <li><div class="ev">
       <i></i><span class="date">${esc(e.date)}</span>
-      <span><strong>${esc(e.procedure)}</strong><small>${esc(e.provider)}</small></span>
-      <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
-    </a></li>`,
+      <span><strong>${esc(e.procedure)}</strong><small>${esc(e.provider || e.status || "Scheduled")}</small></span>
+    </div></li>`,
         )
         .join("")
     : '<li class="empty">No upcoming care scheduled yet.</li>';

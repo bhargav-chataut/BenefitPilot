@@ -98,9 +98,17 @@
                     r="88"
                     transform="rotate(-90 100 100)"
                   />
+                  <circle
+                    class="projected-arc"
+                    id="projectedArc"
+                    cx="100"
+                    cy="100"
+                    r="88"
+                    transform="rotate(-90 100 100)"
+                  />
                 </svg>
                 <div class="ring-c">
-                  <strong id="ringAmt">$0</strong><span>remaining</span>
+                  <strong id="ringAmt">$0</strong><span id="ringLabel">remaining</span>
                 </div>
               </div>
               <div class="snap-stats">
@@ -111,7 +119,8 @@
                   <strong id="sUsed">$0</strong
                   ><small id="sUsedLbl">Used</small>
                 </div>
-                <div><strong id="sRem">$0</strong><small>Remaining</small></div>
+                <div><strong id="sProjected">$0</strong><small>Projected</small></div>
+                <div><strong id="sRem">$0</strong><small id="sRemLbl">Remaining</small></div>
               </div>
             </div>
           </section>

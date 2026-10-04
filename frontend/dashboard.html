@@ -110,9 +110,17 @@
                 r="88"
                 transform="rotate(-90 100 100)"
               />
+              <circle
+                class="projected-arc"
+                id="projectedArc"
+                cx="100"
+                cy="100"
+                r="88"
+                transform="rotate(-90 100 100)"
+              />
             </svg>
             <div class="donut-c">
-              <strong id="pct">0%</strong><span>used</span>
+              <strong id="pct">0%</strong><span id="donutLabel">used</span>
             </div>
           </div>
           <div class="stats">
@@ -121,8 +129,11 @@
               <small>Used</small><strong class="blue" id="used">$0</strong>
             </div>
             <div>
-              <small>Remaining</small
+              <small id="remainingLabel">Remaining</small
               ><strong class="green" id="remaining">$0</strong>
+            </div>
+            <div id="projectedStat" hidden>
+              <small>Projected</small><strong class="orange" id="projectedDonut">$0</strong>
             </div>
           </div>
         </div>
@@ -180,7 +191,6 @@
                 /></svg
             ></span>
             <div class="titles"><h2>Upcoming Care</h2></div>
-            <a class="view-all" href="results.html">View All</a>
           </header>
           <ul class="events" id="events"></ul>
         </section>

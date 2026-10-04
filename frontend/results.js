@@ -441,7 +441,7 @@ $("addPlanBtn").addEventListener("click", async () => {
   $("addPlanStatus").textContent = "Adding plan…";
   try {
     const plan = await window.BenefitData.savePlan({
-      procedures: state.data.procedures, schedule: option.schedule,
+      optionId: option.id, procedures: state.data.procedures, schedule: option.schedule,
       network: state.net, provider: state.data.provider,
       settings: { ...state.data.settings, latestMonth: $("fLatest").value },
     });

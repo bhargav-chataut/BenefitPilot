@@ -335,6 +335,13 @@ h1 {
   stroke-dasharray: 0 553;
   transition: stroke-dasharray 1s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
+.donut .projected-arc {
+  stroke: #f3a32f;
+  stroke-linecap: round;
+  stroke-dasharray: 0 553;
+  transition: stroke-dasharray 1s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.stats .orange { color: #d88712; }
 .donut-c {
   position: absolute;
   inset: 0;
@@ -492,16 +499,6 @@ h1 {
 }
 
 /* upcoming */
-.view-all {
-  margin-left: auto;
-  color: #0a6cf5;
-  font-weight: 600;
-  font-size: 16.5px;
-  text-decoration: none;
-}
-.view-all:hover {
-  text-decoration: underline;
-}
 .events {
   list-style: none;
   position: relative;
@@ -519,7 +516,7 @@ h1 {
 .ev {
   position: relative;
   display: grid;
-  grid-template-columns: 36px 150px 1fr 24px;
+  grid-template-columns: 36px 150px 1fr;
   align-items: center;
   min-height: 82px;
   color: inherit;

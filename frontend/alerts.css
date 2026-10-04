@@ -488,6 +488,12 @@ h1 {
   stroke-dasharray: 0 553;
   transition: stroke-dasharray 1s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
+.ring .projected-arc {
+  stroke: #f3a32f;
+  stroke-linecap: round;
+  stroke-dasharray: 0 553;
+  transition: stroke-dasharray 1s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
 .ring-c {
   position: absolute;
   inset: 0;
