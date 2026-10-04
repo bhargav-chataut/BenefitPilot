@@ -228,6 +228,18 @@ h1 {
   color: var(--gray);
   margin-top: 10px;
 }
+.dashboard-plan {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 16px;
+  padding: 11px 18px;
+  border: 1px solid #cfe0f8;
+  border-radius: 10px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 16px;
+  font-weight: 700;
+}
 .database-error {
   margin-top: 30px;
   padding: 16px 20px;
@@ -287,15 +299,6 @@ h1 {
 .usage {
   margin-top: 30px;
   padding: 24px 28px 30px;
-}
-.plan-pill {
-  margin-left: auto;
-  align-self: flex-start;
-  background: #eef3fb;
-  color: #4d5873;
-  font-size: 15px;
-  padding: 10px 16px;
-  border-radius: 10px;
 }
 .usage-body {
   display: flex;
@@ -593,9 +596,6 @@ h1 {
   }
   .main {
     padding: 20px;
-  }
-  .plan-pill {
-    display: none;
   }
   .usage-body {
     flex-direction: column;
