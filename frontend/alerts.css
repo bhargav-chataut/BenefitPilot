@@ -56,6 +56,28 @@ svg {
   font-size: 12px;
 }
 
+/* Lincoln-inspired demo theme: independent of any official Lincoln branding. */
+:root {
+  --blue: #315c86;
+  --blue-soft: #eef3f7;
+  --blue-line: #d5e0e8;
+  --orange: #c96b2c;
+  --orange-soft: #fff1e7;
+  --navy: #102a43;
+  --gray: #66788a;
+  --green: #237a57;
+  --border: #dfe5ea;
+}
+body { background: #f7f8f9; }
+.sidebar { background: #fff; }
+.logo svg, .logo b { color: var(--orange); fill: var(--orange); }
+.nav a.active { background: var(--orange-soft); color: var(--orange); }
+.nav a.active .ic { color: var(--orange); }
+.card, .al { border-color: var(--border); box-shadow: 0 2px 8px rgba(16, 42, 67, .04); border-radius: 14px; }
+.al.success { background: #eef7f2; border-color: #d1e8dc; }
+.al.success .al-ic { background: #dcefe4; color: var(--green); }
+.al.info .al-ic { color: var(--blue); }
+
 /* ---------- Sidebar ---------- */
 .sidebar {
   width: 267px;

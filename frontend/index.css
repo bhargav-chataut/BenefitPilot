@@ -312,6 +312,20 @@ label {
   opacity: 0.75;
   cursor: progress;
 }
+
+/* Lincoln-inspired demo theme: independent of any official Lincoln branding. */
+:root {
+  --blue: #315c86;
+  --orange: #c96b2c;
+  --navy: #102a43;
+  --gray: #66788a;
+  --line: #dfe5ea;
+}
+body { background: #f7f8f9; }
+.brand { background: linear-gradient(160deg, #f4eee9 0%, #faf8f6 45%, #fff 100%); }
+.logo b, .logo svg { color: var(--orange); stroke: var(--orange); }
+.signin-btn { background: var(--orange); border-color: var(--orange); }
+.signin-btn:hover { background: #ad5722; border-color: #ad5722; }
 .arrow {
   width: 26px;
   height: 26px;

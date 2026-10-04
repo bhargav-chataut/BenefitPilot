@@ -886,6 +886,31 @@ select {
   color: #7d899e;
   font-size: 13.5px;
 }
+
+/* Lincoln-inspired demo theme: independent of any official Lincoln branding. */
+:root {
+  --blue: #315c86;
+  --blue-soft: #eef3f7;
+  --blue-line: #d5e0e8;
+  --orange: #c96b2c;
+  --orange-soft: #fff1e7;
+  --navy: #102a43;
+  --gray: #66788a;
+  --green: #237a57;
+  --border: #dfe5ea;
+}
+body { background: #f7f8f9; }
+.sidebar { background: #fff; }
+.logo svg, .logo b { color: var(--orange); fill: var(--orange); }
+.nav a.active { background: var(--orange-soft); color: var(--orange); }
+.nav a.active .ic { color: var(--orange); }
+.card, .opt, .plan { border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(16, 42, 67, .04); border-radius: 14px; }
+.btn.primary, .btn.optimize { background: var(--orange); border-color: var(--orange); }
+.btn.primary:hover, .btn.optimize:hover { background: #ad5722; border-color: #ad5722; }
+.btn:not(.primary) { border-color: var(--navy); color: var(--navy); background: #fff; }
+.seg button.on { border-color: var(--orange); color: var(--orange); }
+.seg button:disabled { background: #eef1f3; color: #9aa6ad; }
+.plan-head strong, h1, h2 { color: var(--navy); }
 .provider-note {
   display: block;
   margin: 6px 0 0;

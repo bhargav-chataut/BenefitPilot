@@ -1,11 +1,13 @@
 :root {
-  --blue: #1769e0;
-  --blue-soft: #e8f1fd;
-  --blue-line: #cfe0f8;
-  --navy: #0e1a3a;
-  --gray: #68738c;
-  --green: #12a150;
-  --border: #e6ebf3;
+  --blue: #315c86;
+  --blue-soft: #eef3f7;
+  --blue-line: #d5e0e8;
+  --orange: #c96b2c;
+  --orange-soft: #fff1e7;
+  --navy: #102a43;
+  --gray: #66788a;
+  --green: #237a57;
+  --border: #dfe5ea;
 }
 * {
   box-sizing: border-box;
@@ -27,7 +29,7 @@ body {
   font-size: 15px;
   min-height: 100vh;
   display: flex;
-  background: linear-gradient(180deg, #f1f6fe 0%, #f7faff 50%, #f3f7fd 100%);
+  background: #f7f8f9;
 }
 svg {
   display: block;
@@ -51,7 +53,7 @@ svg {
   width: 267px;
   flex: none;
   border-right: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.55);
+  background: #fff;
   padding: 28px 16px;
 }
 .logo {
@@ -65,7 +67,7 @@ svg {
 .logo svg {
   width: 38px;
   height: 38px;
-  fill: var(--blue);
+  fill: var(--orange);
 }
 .logo span {
   font-size: 26px;
@@ -73,7 +75,7 @@ svg {
   letter-spacing: -0.5px;
 }
 .logo b {
-  color: var(--blue);
+  color: var(--orange);
 }
 .nav a {
   display: flex;
@@ -95,12 +97,12 @@ svg {
   background: rgba(232, 241, 253, 0.6);
 }
 .nav a.active {
-  background: var(--blue-soft);
-  color: var(--blue);
+  background: var(--orange-soft);
+  color: var(--orange);
   font-weight: 600;
 }
 .nav a.active .ic {
-  color: var(--blue);
+  color: var(--orange);
 }
 .nav a:focus-visible {
   outline: 3px solid #b7d3fa;
@@ -624,3 +626,18 @@ h1 {
 .benefit-alert { display:flex; align-items:center; gap:16px; margin-top:18px; padding:14px 18px; border-radius:10px; color:#755514; background:#fff4d8; }
 .benefit-alert a { margin-left:auto; color:#755514; font-weight:600; white-space:nowrap; }
 .benefit-alert[hidden] { display:none; }
+
+/* Lincoln-inspired demo theme: independent of any official Lincoln branding. */
+.card {
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(16, 42, 67, .04);
+  border-radius: 14px;
+}
+.ibox { background: var(--orange-soft); color: var(--orange); }
+.donut .arc { stroke: var(--blue); }
+.donut .projected-arc { stroke: var(--orange); }
+.stats .blue { color: var(--blue); }
+.stats .green { color: var(--green); }
+.stats .orange { color: var(--orange); }
+.benefit-alert { border: 1px solid #f0d5c2; background: var(--orange-soft); color: #8c4a22; }
+.benefit-alert a { color: #8c4a22; }
