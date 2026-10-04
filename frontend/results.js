@@ -323,7 +323,9 @@ function render(data, keep = false) {
 
   $("provider").textContent = data.provider;
   $("pdate").textContent = data.date;
-  $("dentist").textContent = data.dentist;
+  $("dentist").textContent = data.providerDetails?.location
+    ? `${data.dentist} • ${data.providerDetails.location}`
+    : data.dentist;
   $("pcount").textContent = data.procedures.length + " procedures";
 
   $("procList").innerHTML = data.procedures
@@ -430,6 +432,16 @@ $("options").addEventListener("change", (e) => {
     renderSelected();
   }
 });
+ $("schedRows").addEventListener("change", (e) => {
+  if (!e.target.name?.startsWith("s")) return;
+  const row = Number(e.target.name.slice(1));
+  const option = state.data.options.find((o) => o.id === state.selected);
+  if (option && Number.isInteger(row)) {
+    option.schedule[row] = [
+      ...document.querySelectorAll(`input[name="${e.target.name}"]`),
+    ].indexOf(e.target);
+  }
+});
 document.querySelector(".seg").addEventListener("click", (e) => {
   const b = e.target.closest("button");
   if (b) {
@@ -467,6 +479,13 @@ async function optimize() {
     procedures: data.procedures,
     schedule,
     settings,
+    employeeEmail: window.localStorage.getItem("benefitPilot.employeeEmail"),
+    provider: data.provider,
+    providerDetails: data.providerDetails,
+    date: data.date,
+    dentist: data.dentist,
+    pricing: data.pricing,
+    insurance: data.insurance,
   };
 
   const btn = $("optimizeBtn"),

@@ -53,6 +53,20 @@ If `GROQ_API_KEY` is configured, extraction uses the Groq model in
 parser if Groq is unavailable. Keep `.env` local and add both variables to
 Render under **Environment**; never commit the key.
 
+The treatment pipeline separates responsibilities:
+
+```text
+NPPES -> provider identity and location (when an NPI is present)
+treatment estimate -> procedure pricing and total estimated cost
+insurance seed data -> plan coverage, deductible, and annual maximum
+optimizer -> network scenarios and treatment scheduling
+```
+
+The backend returns `providerDetails`, `pricing`, and `insurance` alongside
+the care options. NPPES is queried only when the treatment text contains a
+10-digit NPI; if it is unavailable, the treatment-plan provider text remains
+the source of truth.
+
 ## Deploy to Render
 
 This repository includes a Docker deployment configuration. Docker installs

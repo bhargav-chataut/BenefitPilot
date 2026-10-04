@@ -12,6 +12,7 @@ import re
 import sqlite3
 import subprocess
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -44,6 +45,7 @@ def load_dotenv() -> None:
 load_dotenv()
 
 CODE_RE = re.compile(r"\b(D\d{4})\b", re.IGNORECASE)
+NPI_RE = re.compile(r"\bNPI(?:\s*(?:#|number))?\s*:?\s*(\d{10})\b", re.IGNORECASE)
 MONEY_RE = re.compile(r"\$\s*([\d,]+(?:\.\d{1,2})?)")
 PROCEDURE_RE = re.compile(
     r"^\s*(D\d{4})\s+(.+?)\s+\$?\s*([\d,]+(?:\.\d{1,2})?)\s*$",
@@ -114,6 +116,53 @@ def _procedure_from_line(line: str) -> dict | None:
         "code": code.upper(),
         "category": _category(code, name),
         "cost": round(float(raw_cost.replace(",", "")), 2),
+    }
+
+
+def optimize_response(payload: dict) -> dict:
+    procedures = payload.get("procedures")
+    if not isinstance(procedures, list) or not procedures:
+        raise ValueError("At least one procedure is required.")
+    schedule = payload.get("schedule")
+    if not isinstance(schedule, list) or len(schedule) != len(procedures):
+        raise ValueError("A month must be selected for every procedure.")
+    schedule = [max(0, min(3, int(month))) for month in schedule]
+    employee = load_employee(payload.get("employeeEmail"))
+    selected_id = str(payload.get("optionId", "balanced"))
+    options = []
+    for option in ("budget", "balanced", "premium"):
+        in_scenario = calculate_schedule(procedures, schedule, employee, "in")
+        out_scenario = calculate_schedule(procedures, schedule, employee, "out")
+        options.append(
+            {
+                "id": option,
+                "name": option.title(),
+                "description": {
+                    "budget": "Maximize your benefits and minimize your out-of-pocket costs.",
+                    "balanced": "Balance your costs and use benefits efficiently.",
+                    "premium": "Get treatment sooner with minimal out-of-pocket costs.",
+                }[option],
+                "recommended": option == selected_id,
+                "youPay": in_scenario["youPay"],
+                "planPays": in_scenario["planPays"],
+                "benefitRemaining": in_scenario["benefitRemaining"],
+                "range": "Oct 2026 – Jan 2027",
+                "schedule": schedule,
+                "scenario": {"in": in_scenario, "out": out_scenario},
+            }
+        )
+    settings = payload.get("settings")
+    return {
+        "provider": payload.get("provider", "Your dental provider"),
+        "providerDetails": payload.get("providerDetails"),
+        "date": payload.get("date", date.today().strftime("%b %-d, %Y")),
+        "dentist": payload.get("dentist", "Your dental provider"),
+        "months": ["Oct", "Nov", "Dec", "Jan"],
+        "procedures": procedures,
+        "pricing": payload.get("pricing"),
+        "insurance": payload.get("insurance"),
+        "settings": settings if isinstance(settings, dict) else {},
+        "options": options,
     }
 
 
@@ -272,6 +321,13 @@ def extract_with_fallback(text: str) -> list[dict]:
 
 
 def _field(text: str, label: str) -> str:
+    line_match = re.search(
+        rf"^\s*{re.escape(label)}\s*:?\s*(.+?)\s*$",
+        text,
+        re.IGNORECASE | re.MULTILINE,
+    )
+    if line_match:
+        return line_match.group(1).strip()
     labels = (
         "Patient",
         "Employee ID",
@@ -291,6 +347,70 @@ def _field(text: str, label: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def lookup_nppes(text: str, provider_name: str) -> dict:
+    match = NPI_RE.search(text)
+    if not match:
+        return {
+            "name": provider_name,
+            "npi": None,
+            "location": None,
+            "source": "treatment plan",
+        }
+    npi = match.group(1)
+    request = urllib.request.Request(
+        "https://npiregistry.cms.hhs.gov/api/?"
+        + urllib.parse.urlencode({"number": npi, "version": "2.1"}),
+        headers={"Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        result = payload.get("results", [])[0]
+        basic = result.get("basic", {})
+        address = next(
+            (
+                item for item in result.get("addresses", [])
+                if item.get("address_purpose") == "LOCATION"
+            ),
+            result.get("addresses", [{}])[0],
+        )
+        location = ", ".join(
+            value for value in (
+                address.get("address_1"),
+                address.get("city"),
+                address.get("state"),
+                address.get("postal_code"),
+            ) if value
+        )
+        return {
+            "name": " ".join(
+                value for value in (
+                    basic.get("name_prefix"),
+                    basic.get("first_name"),
+                    basic.get("last_name"),
+                ) if value
+            ) or provider_name,
+            "npi": npi,
+            "location": location or None,
+            "phone": address.get("telephone_number"),
+            "source": "NPPES",
+        }
+    except (
+        KeyError,
+        IndexError,
+        TypeError,
+        ValueError,
+        urllib.error.URLError,
+        TimeoutError,
+    ):
+        return {
+            "name": provider_name,
+            "npi": npi,
+            "location": None,
+            "source": "treatment plan",
+        }
+
+
 def _money(value: float) -> int:
     return int(round(value))
 
@@ -306,9 +426,11 @@ def load_employee(email: str | None) -> dict:
         row = database.execute(
             """
             SELECT e.first_name || ' ' || e.last_name, e.email,
-                   p.provider, p.annual_maximum, p.deductible,
+                   p.provider, p.plan_name, p.plan_type,
+                   p.annual_maximum, p.deductible,
                    p.preventive_coverage, p.basic_coverage,
                    p.major_coverage, p.orthodontic_coverage,
+                   p.in_network_supported, p.out_of_network_supported,
                    b.annual_benefit_used, b.deductible_used
             FROM employees e
             JOIN plans p ON p.plan_id = e.plan_id
@@ -323,12 +445,16 @@ def load_employee(email: str | None) -> dict:
             "name",
             "email",
             "provider",
+            "plan_name",
+            "plan_type",
             "annual_maximum",
             "deductible",
             "preventive_rate",
             "basic_rate",
             "major_rate",
             "orthodontic_rate",
+            "in_network_supported",
+            "out_of_network_supported",
             "benefit_used",
             "deductible_used",
         )
@@ -344,7 +470,12 @@ def load_employee(email: str | None) -> dict:
         database.close()
 
 
-def calculate_schedule(procedures: list[dict], schedule: list[int], employee: dict) -> dict:
+def calculate_schedule(
+    procedures: list[dict],
+    schedule: list[int],
+    employee: dict,
+    network: str = "in",
+) -> dict:
     months = ["Oct", "Nov", "Dec", "Jan"]
     rates = {
         "preventive": employee["preventive_rate"] / 100,
@@ -356,6 +487,9 @@ def calculate_schedule(procedures: list[dict], schedule: list[int], employee: di
     deductible_remaining = float(employee["remaining_deductible"])
     plan_pays = 0.0
     next_year_used = 0.0
+    network_factor = 1.0 if network == "in" else 0.7
+    if network == "out" and not employee["out_of_network_supported"]:
+        network_factor = 0.0
     for procedure, month_index in sorted(
         zip(procedures, schedule), key=lambda item: item[1]
     ):
@@ -364,13 +498,17 @@ def calculate_schedule(procedures: list[dict], schedule: list[int], employee: di
         if procedure["category"] != "preventive":
             deductible_applied = min(deductible_remaining, procedure["cost"])
             deductible_remaining -= deductible_applied
-            eligible = max(0, (procedure["cost"] - deductible_applied) * rate)
+            eligible = max(
+                0, (procedure["cost"] - deductible_applied) * rate
+            )
         if month_index >= 3:
-            next_year_used += eligible
+            next_year_used += eligible * network_factor
         else:
             covered = min(current_remaining, eligible)
             current_remaining -= covered
             plan_pays += covered
+    if network == "out":
+        plan_pays *= network_factor
     total = sum(procedure["cost"] for procedure in procedures)
     return {
         "totalCost": _money(total),
@@ -380,6 +518,7 @@ def calculate_schedule(procedures: list[dict], schedule: list[int], employee: di
         "benefitRemaining": _money(current_remaining),
         "nextYearUsed": _money(next_year_used),
         "months": months,
+        "network": network,
     }
 
 
@@ -392,6 +531,7 @@ def build_response(text: str, email: str | None = None) -> dict:
 
     employee = load_employee(email)
     provider = _field(text, "Provider") or "Your dental provider"
+    provider_details = lookup_nppes(text, provider)
     visit_date = _field(text, "Visit Date") or date.today().strftime("%b %-d, %Y")
     months = ["Oct", "Nov", "Dec", "Jan"]
     budget_schedule = [0] * len(procedures)
@@ -414,7 +554,8 @@ def build_response(text: str, email: str | None = None) -> dict:
         ("premium", "Get treatment sooner with minimal out-of-pocket costs."),
     ):
         schedule = schedules[option_id]
-        scenario = calculate_schedule(procedures, schedule, employee)
+        scenario = calculate_schedule(procedures, schedule, employee, "in")
+        out_scenario = calculate_schedule(procedures, schedule, employee, "out")
         options.append(
             {
                 "id": option_id,
@@ -426,7 +567,7 @@ def build_response(text: str, email: str | None = None) -> dict:
                 "benefitRemaining": scenario["benefitRemaining"],
                 "range": "Oct 2026 – Jan 2027",
                 "schedule": schedule,
-                "scenario": {"in": scenario, "out": scenario.copy()},
+                "scenario": {"in": scenario, "out": out_scenario},
                 "score": scenario["youPay"] + sum(schedule) * 10,
             }
         )
@@ -438,10 +579,37 @@ def build_response(text: str, email: str | None = None) -> dict:
 
     return {
         "provider": provider,
+        "providerDetails": provider_details,
         "date": visit_date,
         "dentist": provider,
         "months": months,
         "procedures": procedures,
+        "pricing": {
+            "source": "treatment estimate",
+            "totalEstimatedCost": _money(sum(item["cost"] for item in procedures)),
+            "procedures": [
+                {
+                    "name": item["name"],
+                    "estimatedCost": item["cost"],
+                    "code": item["code"],
+                }
+                for item in procedures
+            ],
+        },
+        "insurance": {
+            "provider": employee["provider"],
+            "planName": employee["plan_name"],
+            "planType": employee["plan_type"],
+            "annualMaximum": employee["annual_maximum"],
+            "remainingAnnualMaximum": employee["remaining_maximum"],
+            "remainingDeductible": employee["remaining_deductible"],
+            "coverage": {
+                "preventive": employee["preventive_rate"],
+                "basic": employee["basic_rate"],
+                "major": employee["major_rate"],
+                "orthodontic": employee["orthodontic_rate"],
+            },
+        },
         "settings": {
             "budget": "$500",
             "priority": "Lowest cost",
@@ -514,7 +682,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         endpoint = urlparse(self.path).path
-        if endpoint not in {"/api/analyze", "/api/extract", "/api/login"}:
+        if endpoint not in {
+            "/api/analyze",
+            "/api/extract",
+            "/api/optimize",
+            "/api/login",
+        }:
             self._json(404, {"error": "Not found"})
             return
         try:
@@ -528,6 +701,15 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(401, {"error": "Incorrect email or password."})
                     return
                 self._json(200, {"employee_id": employee_id, "email": email})
+                return
+            if endpoint == "/api/optimize":
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length))
+                payload["employeeEmail"] = (
+                    payload.get("employeeEmail")
+                    or self.headers.get("X-Employee-Email")
+                )
+                self._json(200, optimize_response(payload))
                 return
             form = cgi.FieldStorage(
                 fp=self.rfile,
