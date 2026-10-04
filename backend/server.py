@@ -13,6 +13,7 @@ import os
 import re
 import sqlite3
 import subprocess
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -350,15 +351,25 @@ COMPUTED STRATEGIES:
             payload = json.loads(response.read().decode("utf-8"))
         content = payload["choices"][0]["message"]["content"]
         explanation = json.loads(content).get("explanation")
-        return explanation.strip() if isinstance(explanation, str) else ""
+        if not isinstance(explanation, str) or not explanation.strip():
+            print("Groq explanation returned no usable explanation.", file=sys.stderr)
+            return ""
+        return explanation.strip()
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        print(
+            f"Groq explanation request failed ({error.code}): {detail}",
+            file=sys.stderr,
+        )
+        return ""
     except (
         KeyError,
         TypeError,
         ValueError,
-        urllib.error.HTTPError,
         urllib.error.URLError,
         TimeoutError,
     ):
+        print("Groq explanation response could not be parsed.", file=sys.stderr)
         return ""
 
 
